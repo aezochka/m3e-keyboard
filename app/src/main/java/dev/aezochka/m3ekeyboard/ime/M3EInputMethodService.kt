@@ -139,7 +139,6 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                     onClipboardPaste = { text -> pasteClipboard(text) },
                     onClipboardDelete = { text -> removeClipboardEntry(text) },
                     onClipboardClear = { clipboardHistory.clear() },
-                    onEditAction = { id -> performEditAction(id) },
                     onToggleDigits = { toggleDigits() },
                     onToggleAccent = { toggleAccent() },
                     onOpenApp = { launchApp() },
@@ -209,13 +208,6 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         ic.commitText(text, 1)
         currentWord = ""
         updateSuggestions("")
-    }
-
-    private fun performEditAction(id: Int) {
-        currentInputConnection?.performContextMenuAction(id)
-        currentWord = ""
-        updateSuggestions("")
-        scheduleSuggestionsUpdate()
     }
 
     private fun toggleDigits() {

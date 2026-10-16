@@ -111,7 +111,6 @@ fun KeyboardView(
     onClipboardPaste: (String) -> Unit = {},
     onClipboardDelete: (String) -> Unit = {},
     onClipboardClear: () -> Unit = {},
-    onEditAction: (Int) -> Unit = {},
     onToggleDigits: () -> Unit = {},
     onToggleAccent: () -> Unit = {},
     onOpenApp: () -> Unit = {},
@@ -173,8 +172,7 @@ fun KeyboardView(
                 ShiftState.ON -> ShiftState.LOCKED
                 ShiftState.LOCKED -> ShiftState.OFF
             }
-            Key.Symbols -> layer = Layer.SYMBOLS
-            Key.Letters -> layer = Layer.LETTERS
+            is ModeSwitch -> layer = key.target
             Key.LayoutSwitch -> switchLayout()
             is Key.Fill -> {}
         }
@@ -234,8 +232,8 @@ fun KeyboardView(
                     Text(
                         text = s,
                         color = scheme.onSurface,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -268,7 +266,6 @@ fun KeyboardView(
             when (mode) {
                 AreaMode.MENU -> MenuPanel(
                     prefs = prefs,
-                    onEditAction = onEditAction,
                     onOpenClipboard = { areaMode = AreaMode.CLIPBOARD },
                     onOpenKaomoji = { areaMode = AreaMode.KAOMOJI },
                     onToggleDigits = onToggleDigits,
@@ -433,20 +430,13 @@ fun KeyboardView(
                                         entranceEnabled = entranceArmed,
                                         onTap = { onStrongTap(); handle(key) },
                                     )
-                                    Key.Symbols -> KeyCap(
+                                    is ModeSwitch -> KeyCap(
                                         modifier = Modifier.weight(key.weight).fillMaxHeight(),
-                                        label = "?123",
-                                        fontSize = 14.sp,
-                                        container = specialBg,
-                                        pressedContainer = specialPressed,
-                                        contentColor = specialContent,
-                                        entranceDelayMillis = entrance,
-                                        entranceEnabled = entranceArmed,
-                                        onTap = { onStrongTap(); handle(key) },
-                                    )
-                                    Key.Letters -> KeyCap(
-                                        modifier = Modifier.weight(key.weight).fillMaxHeight(),
-                                        label = "ABC",
+                                        label = when (key.target) {
+                                            Layer.LETTERS -> "ABC"
+                                            Layer.SYMBOLS -> "?123"
+                                            Layer.SYMBOLS2 -> "#+="
+                                        },
                                         fontSize = 14.sp,
                                         container = specialBg,
                                         pressedContainer = specialPressed,
@@ -485,8 +475,8 @@ private fun ToolbarIcon(
 ) {
     Box(
         modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(38.dp)
+            .clip(RoundedCornerShape(14.dp))
             .background(container)
             .clickable { onTap() },
         contentAlignment = Alignment.Center,
@@ -495,7 +485,7 @@ private fun ToolbarIcon(
             imageVector = icon,
             contentDescription = null,
             tint = contentColor,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(23.dp),
         )
     }
 }
@@ -548,7 +538,6 @@ private fun AccentPanel(choices: List<String>, onPick: (String) -> Unit) {
 @Composable
 private fun MenuPanel(
     prefs: KeyboardPrefs,
-    onEditAction: (Int) -> Unit,
     onOpenClipboard: () -> Unit,
     onOpenKaomoji: () -> Unit,
     onToggleDigits: () -> Unit,
@@ -570,47 +559,15 @@ private fun MenuPanel(
                 icon = Icons.Outlined.ContentPaste,
                 label = stringResource(R.string.menu_clipboard),
                 modifier = Modifier.weight(1f),
+                shape = MaterialShapes.Pill.toShape(),
                 onTap = onOpenClipboard,
             )
             FunctionTile(
                 icon = Icons.Outlined.EmojiEmotions,
                 label = stringResource(R.string.menu_kaomoji),
                 modifier = Modifier.weight(1f),
+                shape = MaterialShapes.Cookie12Sided.toShape(),
                 onTap = onOpenKaomoji,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            FunctionTile(
-                icon = Icons.Outlined.ContentCopy,
-                label = stringResource(R.string.act_copy),
-                modifier = Modifier.weight(1f),
-                onTap = { onEditAction(android.R.id.copy) },
-            )
-            FunctionTile(
-                icon = Icons.Outlined.ContentPaste,
-                label = stringResource(R.string.act_paste),
-                modifier = Modifier.weight(1f),
-                onTap = { onEditAction(android.R.id.paste) },
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            FunctionTile(
-                icon = Icons.Outlined.ContentCut,
-                label = stringResource(R.string.act_cut),
-                modifier = Modifier.weight(1f),
-                onTap = { onEditAction(android.R.id.cut) },
-            )
-            FunctionTile(
-                icon = Icons.Outlined.SelectAll,
-                label = stringResource(R.string.act_select_all),
-                modifier = Modifier.weight(1f),
-                onTap = { onEditAction(android.R.id.selectAll) },
             )
         }
         Row(
@@ -622,6 +579,7 @@ private fun MenuPanel(
                 label = stringResource(R.string.digits_row),
                 active = prefs.digitsRow,
                 modifier = Modifier.weight(1f),
+                shape = MaterialShapes.Arch.toShape(),
                 onTap = onToggleDigits,
             )
             FunctionTile(
@@ -629,6 +587,7 @@ private fun MenuPanel(
                 label = stringResource(R.string.accent_keys),
                 active = prefs.accentKeys,
                 modifier = Modifier.weight(1f),
+                shape = MaterialShapes.Clover4Leaf.toShape(),
                 onTap = onToggleAccent,
             )
         }
@@ -636,6 +595,7 @@ private fun MenuPanel(
             icon = Icons.Outlined.Settings,
             label = stringResource(R.string.tile_settings),
             modifier = Modifier.fillMaxWidth(),
+            shape = MaterialShapes.Pill.toShape(),
             onTap = onOpenApp,
         )
     }
@@ -688,8 +648,23 @@ private fun ClipboardPanel(
                     modifier = Modifier.padding(10.dp),
                 )
             } else {
-                entries.forEach { entry ->
-                    ClipRow(entry = entry, onPaste = onPaste, onDelete = onDelete)
+                entries.chunked(2).forEach { pair ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        pair.forEach { entry ->
+                            ClipTile(
+                                entry = entry,
+                                onPaste = onPaste,
+                                onDelete = onDelete,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (pair.size == 1) {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -727,46 +702,48 @@ private fun KaomojiFlow(onInsert: (String) -> Unit) {
 }
 
 @Composable
-private fun ClipRow(
+private fun ClipTile(
     entry: String,
     onPaste: (String) -> Unit,
     onDelete: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .clip(RoundedCornerShape(18.dp))
+    Column(
+        modifier = modifier
+            .heightIn(min = 72.dp)
+            .clip(MaterialShapes.Pill.toShape())
             .background(scheme.surfaceContainerHighest)
             .clickable { onPaste(entry) }
-            .padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 16.dp, top = 10.dp, bottom = 8.dp, end = 4.dp),
     ) {
         Text(
             text = entry.replace("\n", " ")
-                .let { if (it.length > 80) it.take(80) + "…" else it },
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = 12.dp),
+                .let { if (it.length > 120) it.take(120) + "…" else it },
             color = scheme.onSurface,
-            fontSize = 15.sp,
-            maxLines = 1,
+            fontSize = 13.sp,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .clickable { onDelete(entry) },
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = null,
-                tint = scheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onDelete(entry) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = null,
+                    tint = scheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
     }
 }
@@ -777,13 +754,14 @@ private fun FunctionTile(
     label: String,
     modifier: Modifier = Modifier,
     active: Boolean = false,
+    shape: Shape = RoundedCornerShape(20.dp),
     onTap: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .height(54.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(shape)
             .background(if (active) scheme.secondaryContainer else scheme.surfaceContainerHighest)
             .clickable { onTap() }
             .padding(horizontal = 14.dp),
