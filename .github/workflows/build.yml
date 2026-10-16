@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_PASSWORD: ${{ secrets.M3E_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: m3e
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +25,9 @@ jobs:
 
       - name: Install Android platform 37
         run: yes | sdkmanager "platforms;android-37" > /dev/null || true
+
+      - name: Decode signing keystore
+        run: echo "${{ secrets.M3E_KEYSTORE_B64 }}" | base64 -d > app/m3e.jks
 
       - name: Unit tests (Robolectric smoke)
         run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace

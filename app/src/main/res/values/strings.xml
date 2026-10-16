@@ -39,6 +39,13 @@
     <string name="swipe_hint">Swipe the spacebar left or right to switch language</string>
     <string name="clip_empty">Clipboard is empty</string>
     <string name="clip_clear_all">Clear all</string>
+    <string name="menu_clipboard">Clipboard</string>
+    <string name="menu_kaomoji">Kaomoji</string>
+    <string name="digits_row">Digits row above letters</string>
+    <string name="act_copy">Copy</string>
+    <string name="act_cut">Cut</string>
+    <string name="act_paste">Paste</string>
+    <string name="act_select_all">Select all</string>
     <string name="preview_title">Preview</string>
     <string name="try_here">Try the keyboard here</string>
 </resources>

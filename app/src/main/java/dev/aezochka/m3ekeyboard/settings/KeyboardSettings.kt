@@ -8,6 +8,7 @@ data class KeyboardPrefs(
     val keyHeightScale: Float = 1f,
     val dynamicColors: Boolean = true,
     val accentKeys: Boolean = false,
+    val digitsRow: Boolean = false,
     val layout: String = "en",
 )
 
@@ -22,6 +23,7 @@ object KeyboardSettings {
             keyHeightScale = p.getFloat("key_height_scale", 1f),
             dynamicColors = p.getBoolean("dynamic_colors", true),
             accentKeys = p.getBoolean("colored_keys", false),
+            digitsRow = p.getBoolean("digits_row", false),
             layout = p.getString("layout", "en") ?: "en",
         )
     }
@@ -34,6 +36,7 @@ object KeyboardSettings {
             .putFloat("key_height_scale", prefs.keyHeightScale)
             .putBoolean("dynamic_colors", prefs.dynamicColors)
             .putBoolean("colored_keys", prefs.accentKeys)
+            .putBoolean("digits_row", prefs.digitsRow)
             .putString("layout", prefs.layout)
             .apply()
     }

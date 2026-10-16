@@ -11,14 +11,23 @@ android {
         applicationId = "dev.aezochka.m3ekeyboard"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.3.0"
+        versionCode = 8
+        versionName = "1.4.0"
     }
 
     buildTypes {
+        val ksPwd = System.getenv("KEYSTORE_PASSWORD")
+        if (ksPwd != null) {
+            signingConfigs.create("ci") {
+                storeFile = file("m3e.jks")
+                storePassword = ksPwd
+                keyAlias = System.getenv("KEY_ALIAS") ?: "m3e"
+                keyPassword = ksPwd
+            }
+        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (ksPwd != null) signingConfigs.getByName("ci") else signingConfigs.getByName("debug")
         }
     }
 

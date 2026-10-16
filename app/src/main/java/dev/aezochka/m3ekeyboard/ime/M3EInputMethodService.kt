@@ -4,6 +4,8 @@ import android.content.ClipboardManager
 import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
+import android.os.Handler
+import android.os.Looper
 import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
@@ -47,6 +49,9 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
     private val clipboardHistory = mutableStateListOf<String>()
     private var selfInputView: View? = null
     private var clipboardManager: ClipboardManager? = null
+    private var currentWord = ""
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val suggestionsRunnable = Runnable { updateSuggestions(lastWordBeforeCursor()) }
 
     private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener { onClipboardChanged() }
 
@@ -96,7 +101,8 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         prefsState = KeyboardSettings.read(this)
         layoutState = prefsState.layout
         enterLabelState = enterActionLabel(info)
-        updateSuggestions()
+        currentWord = lastWordBeforeCursor()
+        updateSuggestions(currentWord)
     }
 
     override fun onCreateInputView(): View {
@@ -133,6 +139,8 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                     onClipboardPaste = { text -> pasteClipboard(text) },
                     onClipboardDelete = { text -> removeClipboardEntry(text) },
                     onClipboardClear = { clipboardHistory.clear() },
+                    onEditAction = { id -> performEditAction(id) },
+                    onToggleDigits = { toggleDigits() },
                     onOpenApp = { launchApp() },
                     onLayoutChanged = { layout -> saveLayout(layout) },
                 )
@@ -143,7 +151,9 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
     private fun commitKey(text: String) {
         val ic = currentInputConnection ?: return
         ic.commitText(text, 1)
-        updateSuggestions()
+        currentWord = if (text.length == 1 && text[0].isLetter()) currentWord + text else ""
+        updateSuggestions(currentWord)
+        scheduleSuggestionsUpdate()
     }
 
     private fun deleteBeforeCursor() {
@@ -154,14 +164,19 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
             }
+            if (currentWord.isNotEmpty()) currentWord = currentWord.dropLast(1)
         } else {
             ic.commitText("", 1)
+            currentWord = ""
         }
-        updateSuggestions()
+        updateSuggestions(currentWord)
+        scheduleSuggestionsUpdate()
     }
 
     private fun sendEnter() {
         val ic = currentInputConnection ?: return
+        currentWord = ""
+        updateSuggestions("")
         val action = currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)
             ?: EditorInfo.IME_ACTION_NONE
         if (action == EditorInfo.IME_ACTION_NONE || action == EditorInfo.IME_ACTION_UNSPECIFIED) {
@@ -170,7 +185,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         } else {
             ic.performEditorAction(action)
         }
-        updateSuggestions()
+        scheduleSuggestionsUpdate()
     }
 
     private fun commitSuggestion(word: String) {
@@ -184,13 +199,27 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         ic.commitText(word, 1)
         ic.commitText(" ", 1)
         ic.endBatchEdit()
-        updateSuggestions()
+        currentWord = ""
+        updateSuggestions("")
     }
 
     private fun pasteClipboard(text: String) {
         val ic = currentInputConnection ?: return
         ic.commitText(text, 1)
-        updateSuggestions()
+        currentWord = ""
+        updateSuggestions("")
+    }
+
+    private fun performEditAction(id: Int) {
+        currentInputConnection?.performContextMenuAction(id)
+        currentWord = ""
+        updateSuggestions("")
+        scheduleSuggestionsUpdate()
+    }
+
+    private fun toggleDigits() {
+        prefsState = prefsState.copy(digitsRow = !prefsState.digitsRow)
+        KeyboardSettings.write(this, prefsState)
     }
 
     private fun removeClipboardEntry(text: String) {
@@ -221,19 +250,22 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         KeyboardSettings.write(this, prefsState.copy(layout = layout))
     }
 
-    private fun updateSuggestions() {
-        val ic = currentInputConnection
-        if (ic == null) {
-            suggestionsState = emptyList()
-            return
-        }
-        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: ""
-        val word = before.takeLastWhile { it.isLetter() }
+    private fun updateSuggestions(word: String) {
         suggestionsState = if (word.length >= 2) {
             Suggest.suggest(word, layoutState)
         } else {
             emptyList()
         }
+    }
+
+    private fun lastWordBeforeCursor(): String {
+        val ic = currentInputConnection ?: return ""
+        return (ic.getTextBeforeCursor(48, 0)?.toString() ?: "").takeLastWhile { it.isLetter() }
+    }
+
+    private fun scheduleSuggestionsUpdate(delayMillis: Long = 40) {
+        mainHandler.removeCallbacks(suggestionsRunnable)
+        mainHandler.postDelayed(suggestionsRunnable, delayMillis)
     }
 
     private fun onClipboardChanged() {

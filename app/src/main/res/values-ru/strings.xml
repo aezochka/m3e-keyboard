@@ -39,6 +39,13 @@
     <string name="swipe_hint">Свайп по пробелу влево/вправо меняет язык</string>
     <string name="clip_empty">Буфер обмена пуст</string>
     <string name="clip_clear_all">Очистить всё</string>
+    <string name="menu_clipboard">Буфер обмена</string>
+    <string name="menu_kaomoji">Каомодзи</string>
+    <string name="digits_row">Ряд цифр над буквами</string>
+    <string name="act_copy">Копировать</string>
+    <string name="act_cut">Вырезать</string>
+    <string name="act_paste">Вставить</string>
+    <string name="act_select_all">Выделить всё</string>
     <string name="preview_title">Предпросмотр</string>
     <string name="try_here">Попробуй клавиатуру здесь</string>
 </resources>
