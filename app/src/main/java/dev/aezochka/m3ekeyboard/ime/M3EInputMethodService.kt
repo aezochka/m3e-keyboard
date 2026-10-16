@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -45,6 +46,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
     override fun onCreate() {
         super.onCreate()
         savedStateRegistryController.performAttach()
+        savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         val p = KeyboardSettings.read(this)
         prefsState = p
@@ -84,9 +86,15 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
 
     override fun onCreateInputView(): View {
         val view = ImeComposeView(this)
+        view.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnLifecycleDestroyed(lifecycle))
         view.setViewTreeLifecycleOwner(this)
         view.setViewTreeViewModelStoreOwner(this)
         view.setViewTreeSavedStateRegistryOwner(this)
+        window?.window?.decorView?.let { decor ->
+            decor.setViewTreeLifecycleOwner(this)
+            decor.setViewTreeViewModelStoreOwner(this)
+            decor.setViewTreeSavedStateRegistryOwner(this)
+        }
         selfInputView = view
         return view
     }
