@@ -175,6 +175,12 @@ fun SettingsScreen() {
                         checked = prefs.sound,
                         onChange = { update(prefs.copy(sound = it)) },
                     )
+                    SwitchRow(
+                        title = stringResource(R.string.digits_row),
+                        subtitle = stringResource(R.string.digits_row_sub),
+                        checked = prefs.digitsRow,
+                        onChange = { update(prefs.copy(digitsRow = it)) },
+                    )
                 }
             }
 
