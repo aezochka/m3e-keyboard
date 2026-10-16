@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>M3E Keyboard — design prototype</title>
+<style>
+:root{
+  --surface:#F4EFF7; --surface-low:#EDE7F3; --surface-high:#E6E0EC;
+  --key:#FFFFFF; --key-pressed:#ECE6F0; --on-key:#1D1B20;
+  --special:#E3DCEA; --special-pressed:#D8D0E2; --on-special:#49454F;
+  --primary:#6750A4; --on-primary:#FFFFFF;
+  --primary-c:#EADDFF; --on-primary-c:#21005D;
+  --secondary-c:#E8DEF8; --on-secondary-c:#1D192B;
+  --tertiary-c:#FFD8E4; --on-tertiary-c:#31111D;
+  --tertiary:#B03771;
+  --outline:#CAC4D0; --shadow:0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.08);
+  --spring: cubic-bezier(.34,1.45,.5,1);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0}
+html,body{height:100%}
+body{
+  font-family:'Roboto',system-ui,-apple-system,sans-serif;
+  background:var(--surface);
+  display:flex; flex-direction:column; align-items:center;
+  transition:background .3s;
+  overflow-x:hidden;
+}
+.wrap{width:100%; max-width:430px; padding:16px 14px calc(24px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:16px}
+
+/* ---------- header ---------- */
+header{display:flex; align-items:center; justify-content:space-between; padding:6px 4px}
+h1{font-size:32px; font-weight:800; letter-spacing:-.5px; color:var(--primary); transition:color .3s}
+.hdr-right{display:flex; gap:10px; align-items:center}
+.icon-btn{
+  width:44px;height:44px; border:none; border-radius:16px; cursor:pointer;
+  background:var(--special); color:var(--on-special);
+  font-size:20px; display:flex; align-items:center; justify-content:center;
+  transition:transform .25s var(--spring), background .25s, border-radius .25s;
+}
+.icon-btn:active{transform:scale(.9); border-radius:22px; background:var(--special-pressed)}
+.palette-row{display:flex; gap:8px; padding:2px 4px}
+.dot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent; transition:transform .2s var(--spring)}
+.dot:active{transform:scale(.8)}
+.dot.active{border-color:var(--primary)}
+
+/* ---------- fake chat ---------- */
+.chat{
+  background:var(--surface-low); border-radius:28px; padding:16px;
+  display:flex; flex-direction:column; gap:10px; min-height:120px;
+}
+.bubble{
+  background:var(--primary-c); color:var(--on-primary-c);
+  border-radius:20px; border-bottom-left-radius:6px;
+  padding:10px 14px; max-width:80%; font-size:15px;
+  animation:pop .35s var(--spring);
+}
+.bubble.me{align-self:flex-end; background:var(--tertiary-c); color:var(--on-tertiary-c); border-bottom-left-radius:20px; border-bottom-right-radius:6px}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.field{
+  display:flex; gap:8px; align-items:center;
+  background:var(--key); border-radius:999px; padding:6px 8px 6px 18px; box-shadow:var(--shadow);
+}
+.field input{
+  flex:1; border:none; outline:none; background:transparent; font-size:16px; color:var(--on-key); min-width:0;
+}
+.field .send{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--primary); color:var(--on-primary); font-size:17px;
+  transition:transform .25s var(--spring), border-radius .25s;
+}
+.field .send:active{transform:scale(.88); border-radius:14px}
+
+/* ---------- keyboard ---------- */
+.kb{
+  background:var(--surface-low); border-radius:26px; padding:8px 8px 12px;
+  display:flex; flex-direction:column; gap:8px; overflow:hidden;
+  transition:background .3s;
+}
+.toolbar{
+  height:44px; display:flex; align-items:center; gap:4px; padding:0 4px 6px;
+  position:relative;
+}
+.wave{
+  position:absolute; left:0; right:0; bottom:-2px; height:3px; opacity:0; transition:opacity .3s;
+}
+.wave.on{opacity:1}
+.wave svg{width:100%; height:3px; display:block}
+.wave path{fill:none; stroke:var(--primary); stroke-width:2.5; stroke-linecap:round;
+  stroke-dasharray:60 300; animation:wave 1.6s linear infinite}
+@keyframes wave{to{stroke-dashoffset:-360}}
+.tb-btn{
+  width:40px;height:40px;border:none;cursor:pointer;
+  border-radius:14px; background:var(--special); color:var(--on-special);
+  font-size:18px; display:flex;align-items:center;justify-content:center;
+  transition:all .3s var(--spring);
+}
+.tb-btn:active{transform:scale(.88); border-radius:20px}
+.tb-btn.on{background:var(--secondary-c); color:var(--on-secondary-c); border-radius:20px}
+.sug{
+  flex:1; height:40px; border:none; cursor:pointer; border-radius:14px;
+  background:transparent; color:var(--on-key); font-size:15.5px; font-weight:700;
+  transition:all .25s var(--spring);
+}
+.sug:active{transform:scale(.94); background:var(--secondary-c)}
+
+.rows{display:grid; gap:7px}
+.row{display:grid; gap:7px}
+.key{
+  position:relative; overflow:hidden; cursor:pointer; user-select:none;
+  height:54px; border-radius:19px; border:none;
+  background:var(--key); color:var(--on-key);
+  font-family:inherit; font-size:19px; font-weight:600;
+  box-shadow:var(--shadow);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .22s var(--spring), border-radius .22s var(--spring), background .18s;
+  animation:enter .5s var(--spring) backwards;
+}
+@keyframes enter{from{transform:scale(.6); opacity:0}}
+.key:active, .key.pressed{
+  transform:scale(.915); border-radius:27px; background:var(--key-pressed);
+}
+.key.special{background:var(--special); color:var(--on-special); font-size:15px; font-weight:700}
+.key.special:active{background:var(--special-pressed)}
+.key.shift.on{background:var(--secondary-c); color:var(--on-secondary-c)}
+.key.enter{background:var(--tertiary-c); color:var(--on-tertiary-c); font-size:15px; font-weight:800}
+.key.enter:active{background:var(--tertiary)}
+.key.space{border-radius:27px; font-size:13px; font-weight:500; color:var(--on-special)}
+.key.enter, .key.space{border-radius:27px}
+
+/* ripple */
+.ripple{
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:currentColor; opacity:.16;
+  transform:scale(0); animation:rip .5s ease-out forwards;
+}
+@keyframes rip{to{transform:scale(1); opacity:0}}
+
+/* ---------- panels ---------- */
+.panel{display:none; gap:10px; padding:6px 4px; animation:slide .3s var(--spring)}
+.panel.on{display:flex; flex-direction:column}
+@keyframes slide{from{transform:translateY(18px); opacity:0}}
+.panel h3{font-size:13px; font-weight:700; color:var(--on-special); text-transform:uppercase; letter-spacing:1px; padding:4px 8px}
+.clip-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.clip{
+  background:var(--key); border-radius:22px; padding:12px 12px 8px 16px; cursor:pointer;
+  box-shadow:var(--shadow); position:relative; overflow:hidden; min-height:76px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  transition:transform .25s var(--spring), border-radius .25s;
+}
+.clip:active{transform:scale(.95); border-radius:28px}
+.clip p{font-size:13px; color:var(--on-key); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.clip .x{
+  align-self:flex-end; width:28px;height:28px;border:none;cursor:pointer;border-radius:10px;
+  background:transparent; color:var(--on-special); font-size:13px;
+}
+.clip .x:active{background:var(--special)}
+.km-flow{display:flex; flex-wrap:wrap; gap:9px; padding:4px 2px}
+.km{
+  border:none; cursor:pointer; padding:9px 15px; border-radius:999px;
+  background:var(--secondary-c); color:var(--on-secondary-c); font-size:16px;
+  transition:transform .25s var(--spring), background .2s;
+}
+.km:active{transform:scale(.9); background:var(--primary-c)}
+
+/* ---------- accent popup ---------- */
+.accent-pop{
+  position:fixed; z-index:50; display:flex; gap:8px; padding:10px;
+  background:var(--secondary-c); border-radius:26px; box-shadow:0 8px 30px rgba(0,0,0,.25);
+  animation:pop .25s var(--spring);
+}
+.accent-pop button{
+  min-width:54px; height:58px; border:none; cursor:pointer; border-radius:20px;
+  background:var(--key); color:var(--on-key); font-size:22px; font-weight:700;
+  transition:transform .2s var(--spring), border-radius .2s;
+}
+.accent-pop button:active{transform:scale(.9); border-radius:29px}
+.accent-pop button.sel{background:var(--primary); color:var(--on-primary); transform:scale(1.08); border-radius:29px}
+
+.hint{font-size:12px; color:var(--on-special); text-align:center; padding-top:4px}
+footer{font-size:11px; color:var(--on-special); text-align:center; opacity:.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>M3E<br>Keyboard</h1>
+    <div class="hdr-right">
+      <button class="icon-btn" id="darkBtn" title="тема">🌙</button>
+      <button class="icon-btn" id="langBtn" title="язык">RU</button>
+    </div>
+  </header>
+  <div class="palette-row" id="palettes"></div>
+
+  <div class="chat">
+    <div class="bubble">привет! ну как тебе клава?</div>
+    <div class="bubble me" id="reply" style="display:none"></div>
+    <div class="field">
+      <input id="inp" placeholder="Попробуй печатать…" autocomplete="off">
+      <button class="send" id="send">➤</button>
+    </div>
+  </div>
+
+  <div class="kb" id="kb">
+    <div class="toolbar">
+      <button class="tb-btn" id="clipBtn" title="буфер">📋</button>
+      <button class="tb-btn" id="kmBtn" title="каомодзи">uwu</button>
+      <button class="sug" id="s1"></button>
+      <button class="sug" id="s2"></button>
+      <button class="sug" id="s3"></button>
+      <button class="tb-btn" id="gear">⚙</button>
+      <div class="wave" id="wave"><svg viewBox="0 0 300 3" preserveAspectRatio="none"><path d="M0 1.5 Q 15 -1 30 1.5 T 60 1.5 T 90 1.5 T 120 1.5 T 150 1.5 T 180 1.5 T 210 1.5 T 240 1.5 T 270 1.5 T 300 1.5"/></svg></div>
+    </div>
+
+    <div class="panel" id="clipPanel">
+      <h3>Буфер обмена</h3>
+      <div class="clip-grid" id="clipGrid"></div>
+    </div>
+    <div class="panel" id="kmPanel">
+      <h3>Каомодзи</h3>
+      <div class="km-flow" id="kmFlow"></div>
+    </div>
+
+    <div class="rows" id="rows"></div>
+    <div class="hint">долгое нажатие на букву — диакритика • свайп по пробелу — язык</div>
+  </div>
+  <footer>дизайн-прототип M3E • портируется в Android 1:1</footer>
+</div>
+
+<script>
+/* ============ palettes ============ */
+const P = {
+  violet: {
+    light:{surface:'#F4EFF7',low:'#EDE7F3',key:'#FFFFFF',keyp:'#ECE6F0',on:'#1D1B20',sp:'#E3DCEA',spp:'#D8D0E2',onsp:'#49454F',pri:'#6750A4',onpri:'#fff',pric:'#EADDFF',onpric:'#21005D',sec:'#E8DEF8',onsec:'#1D192B',terc:'#FFD8E4',onterc:'#31111D',ter:'#B03771',out:'#CAC4D0'},
+    dark:{surface:'#131018',low:'#1C191F',key:'#2B2730',keyp:'#37323C',on:'#E6E0E9',sp:'#232028',spp:'#2E2A34',onsp:'#CAC4D0',pri:'#CFBCFF',onpri:'#381E72',pric:'#4F378B',onpric:'#EADDFF',sec:'#4A4458',onsec:'#E8DEF8',terc:'#633B48',onterc:'#FFD8E4',ter:'#FFB1C5',out:'#49454F'}
+  },
+  blue: {
+    light:{surface:'#F3F6FF',low:'#EAF0FA',key:'#FFFFFF',keyp:'#E4EAF5',on:'#171B26',sp:'#DFE7F3',spp:'#D2DDEC',onsp:'#414754',pri:'#2F61C4',onpri:'#fff',pric:'#DCE2FF',onpric:'#0F2660',sec:'#DCE2FF',onsec:'#0F2660',terc:'#BFE4FF',onterc:'#0A3A5C',ter:'#517FA8',out:'#C3CADD'},
+    dark:{surface:'#101426',low:'#171B2D',key:'#262B41',keyp:'#333852',on:'#E2E6F4',sp:'#1E2338',spp:'#2A2F49',onsp:'#C1C7DC',pri:'#ABC0FF',onpri:'#0F2660',pric:'#2E4577',onpric:'#DCE2FF',sec:'#3A4A70',onsec:'#DCE2FF',terc:'#35597F',onterc:'#C9E7FF',ter:'#9BCBEF',out:'#3E465F'}
+  },
+  green: {
+    light:{surface:'#F0F7F0',low:'#E7F0E6',key:'#FFFFFF',keyp:'#E4EDE2',on:'#142014',sp:'#DEE9DC',spp:'#D0DFCC',onsp:'#3D4A3C',pri:'#2C6A35',onpri:'#fff',pric:'#C6EED0',onpric:'#0A2A0F',sec:'#D3F4D8',onsec:'#0A2A0F',terc:'#F0E1FF',onterc:'#362459',ter:'#9A82B8',out:'#BFCFC0'},
+    dark:{surface:'#0F1611',low:'#151E17',key:'#222D26',keyp:'#2C3831',on:'#DDE7DB',sp:'#1B251E',spp:'#26312A',onsp:'#BCC9BB',pri:'#A4F2AB',onpri:'#0A2A0F',pric:'#255E2E',onpric:'#C6EED0',sec:'#334B37',onsec:'#D3F4D8',terc:'#3F2E57',onterc:'#F0E1FF',ter:'#B397D6',out:'#374A39'}
+  },
+  orange: {
+    light:{surface:'#FBF3EA',low:'#F3EBDF',key:'#FFFFFF',keyp:'#F2E7D5',on:'#1F1B16',sp:'#EFE5D4',spp:'#E7DCC6',onsp:'#4E4639',pri:'#8B5000',onpri:'#fff',pric:'#FFDCC2',onpric:'#2E1500',sec:'#FFE0BC',onsec:'#2E1500',terc:'#BFE1F4',onterc:'#0C3345',ter:'#517FA8',out:'#D6C5AD'},
+    dark:{surface:'#181209',low:'#1F1910',key:'#2A2418',keyp:'#362E20',on:'#ECE1D3',sp:'#221D13',spp:'#2E271B',onsp:'#D2C4B2',pri:'#FFB877',onpri:'#2E1500',pric:'#5A4300',onpric:'#FFDCC2',sec:'#4B3F28',onsec:'#FFE0BC',terc:'#1F4963',onterc:'#C3E7FB',ter:'#D1E4FF',out:'#463E2F'}
+  },
+  pink: {
+    light:{surface:'#FDF2F6',low:'#F5E9EF',key:'#FFFFFF',keyp:'#F5E2EC',on:'#201A1E',sp:'#F0E1E9',spp:'#E9D6E1',onsp:'#51434E',pri:'#8E4957',onpri:'#fff',pric:'#FFD9E2',onpric:'#31111D',sec:'#F8D7E2',onsec:'#31111D',terc:'#D9E7FF',onterc:'#1A3665',ter:'#6D5E8C',out:'#D4BCC7'},
+    dark:{surface:'#181215',low:'#201820',key:'#2A2229',keyp:'#362C34',on:'#EDE0E6',sp:'#221C22',spp:'#2F272F',onsp:'#D6C2CC',pri:'#FFB1C4',onpri:'#31111D',pric:'#633B48',onpric:'#FFD9E2',sec:'#544150',onsec:'#F8D7E2',terc:'#31405F',onterc:'#D9E7FF',ter:'#D6C2CC',out:'#4C414A'}
+  }
+};
+let pal = 'violet', dark = false;
+function applyTheme(){
+  const c = P[pal][dark?'dark':'light'], r = document.documentElement.style;
+  const m = {surface:'--surface',low:'--surface-low',key:'--key',keyp:'--key-pressed',on:'--on-key',sp:'--special',spp:'--special-pressed',onsp:'--on-special',pri:'--primary',onpri:'--on-primary',pric:'--primary-c',onpric:'--on-primary-c',sec:'--secondary-c',onsec:'--on-secondary-c',terc:'--tertiary-c',onterc:'--on-tertiary-c',ter:'--tertiary',out:'--outline'};
+  for(const k in m) r.setProperty(m[k], c[k]);
+  document.getElementById('darkBtn').textContent = dark ? '☀' : '🌙';
+}
+
+/* ============ layouts ============ */
+const EN = [
+  "qwertyuiop".split(''),
+  "asdfghjkl'".split(''),
+  "zxcvbnm-".split(''),
+];
+const RU = [
+  "йцукенгшщзх".split(''),
+  "фывапролдж-".split(''),
+  "ячсмитьбю".split(''),
+];
+const DIA = {
+  en:{a:'áàâäãå',e:'éèêë',i:'íìîï',o:'óòôöõ',u:'úùûü',c:'ç',n:'ñ',s:'ß',y:'ýÿ',"'":'«»"'},
+  ru:{е:'ёэ',ь:'ъ','-':'—–'},
+};
+const DICT = {
+  en:('the be to of and you for not are with this have that can will your from they we say one all would there what about which when make like time just him know take than then them see other its over think also more after most such even new want because any these come work life part use good thanks hello hi sorry please maybe sure cool nice great awesome funny later soon today tomorrow love miss').split(' '),
+  ru:('и в не на я с он она они мы вы что это как а но да или если когда где кто уже еще тоже свой этот тот там тут так теперь потом сегодня завтра вчера всегда никогда может можно нужно надо хочу могу знаю вижу думаю привет пока спасибо пожалуйста ладно давай пошли домой работа деньги время утро вечер ночь устал занят супер класс круто отлично нормально странно здорово спать кофе еда вода телефон приду приеду увидимся договорились').split(' ')
+};
+let lang = 'ru', shift = 0, symb = 0; /* shift 0/1/2 off/on/lock */
+
+function cols(){ return lang==='ru' ? 11 : 10 }
+function spaceW(){ return (lang==='ru'?11:10) - 6.6 }
+
+function render(){
+  const rows = document.getElementById('rows');
+  const total = cols();
+  const L = lang==='ru' ? RU : EN;
+  const data = symb===0 ? L : SYM[symb-1];
+  let html = '';
+  data.forEach((r, i) => {
+    let row = '';
+    r.forEach((ch, j) => {
+      const d = (symb===0 && DIA[lang][ch]) ? DIA[lang][ch] : DIA.punct[ch];
+      row += `<button class="key${symb===0?'':' special'}" data-ch="${ch}" ${d?`data-dia="${d}"`:''}
+        style="animation-delay:${i*40+j*8}ms">${(symb===0&&shift)?ch.toUpperCase():ch}</button>`;
+    });
+    if(i===2 && symb===0){
+      row = `<button class="key special shift ${shift?'on':''}" data-k="shift" style="animation-delay:120ms">${shift===2?'🔒':'⇧'}</button>` + row +
+            `<button class="key special" data-k="bs" style="animation-delay:130ms">⌫</button>`;
+      html += `<div class="row" style="grid-template-columns:1fr repeat(${r.length},1fr) 1fr">` + row + '</div>';
+    } else if(i===2){
+      row = `<button class="key special" data-k="page" style="animation-delay:120ms">${symb===2?'?123':'+='}</button>` + row +
+            `<button class="key special" data-k="bs" style="animation-delay:130ms">⌫</button>`;
+      html += `<div class="row" style="grid-template-columns:repeat(${r.length},1fr) 1fr 1fr">` + row + '</div>';
+    } else {
+      html += `<div class="row" style="grid-template-columns:repeat(${r.length},1fr)">` + row + '</div>';
+    }
+  });
+  /* bottom row */
+  const sw = lang==='ru'&&symb===0 ? 11 : 10;
+  const labels = symb===0 ? ['🌐','?123'] : (symb===1?['🌐','ABC']:['🌐','?123']);
+  html += `<div class="row" style="grid-template-columns:1.4fr 1.4fr 1fr ${spaceW()}fr 1fr 1.8fr">
+    <button class="key special" data-k="globe">${labels[0]}</button>
+    <button class="key special" data-k="mode">${labels[1]}</button>
+    <button class="key special" data-ch=",">,</button>
+    <button class="key space" data-k="space">${lang==='ru'?'Русский':'English'}</button>
+    <button class="key special" data-ch=".">.</button>
+    <button class="key enter" data-k="enter">↵</button>
+  </div>`;
+  rows.innerHTML = html;
+  bindKeys();
+}
+const SYM = [
+  ['1234567890'.split(''), '@#€$&-+()'.split(''), '*":;!?='.split('')],
+  ['~`^|×÷±•°…'.split(''), '₽¥£¢№™©«'.split(''), '<>[]{}_'.split('')],
+];
+DIA.punct = {',':'…;','.':'…','!':'¡','?':'¿','-':'—–',"'":'«»"','(':'[',')':']'};
+
+/* ============ typing ============ */
+const inp = document.getElementById('inp');
+function suggest(){
+  const w = inp.value.split(/\s+/).pop().toLowerCase();
+  const wave = document.getElementById('wave');
+  if(w.length < 2){ wave.classList.remove('on'); setSug('','',''); return }
+  wave.classList.add('on');
+  const m = DICT[lang].filter(x=>x.length>w.length && x.startsWith(w)).slice(0,3);
+  setSug(m[0]||'', m[1]||'', m[2]||'');
+  setTimeout(()=>wave.classList.remove('on'), 900);
+}
+function setSug(a,b,c){ ['s1','s2','s3'].forEach((id,i)=>{document.getElementById(id).textContent = [a,b,c][i]})}
+function insert(t){ inp.value += t; suggest() }
+document.getElementById('send').onclick = ()=>{
+  if(!inp.value.trim()) return;
+  const r = document.getElementById('reply');
+  r.style.display='block'; r.textContent = inp.value;
+  inp.value=''; setSug('','','');
+};
+
+/* ============ keys ============ */
+function ripple(el, x, y){
+  const r = document.createElement('span'); r.className='ripple';
+  const rect = el.getBoundingClientRect(), d = Math.max(rect.width, rect.height)*1.6;
+  r.style.cssText = `width:${d}px;height:${d}px;left:${x-rect.left-d/2}px;top:${y-rect.top-d/2}px`;
+  el.appendChild(r); setTimeout(()=>r.remove(), 500);
+}
+let lpTimer = null, popEl = null;
+function closePop(){ if(popEl){popEl.remove(); popEl=null} }
+function showPop(key, dia){
+  closePop();
+  const rect = key.getBoundingClientRect();
+  popEl = document.createElement('div'); popEl.className='accent-pop';
+  [...dia].forEach(c=>{
+    const b = document.createElement('button'); b.textContent = c;
+    b.onclick = ()=>{ insert(c); closePop(); };
+    popEl.appendChild(b);
+  });
+  document.body.appendChild(popEl);
+  const pr = popEl.getBoundingClientRect();
+  popEl.style.left = Math.max(8, Math.min(window.innerWidth-pr.width-8, rect.left + rect.width/2 - pr.width/2)) + 'px';
+  popEl.style.top = (rect.top - pr.height - 10) + 'px';
+  key.classList.add('pressed');
+}
+function bindKeys(){
+  document.querySelectorAll('.key').forEach(k=>{
+    k.addEventListener('pointerdown', e=>{
+      ripple(k, e.clientX, e.clientY);
+      const dia = k.dataset.dia;
+      if(dia){ lpTimer = setTimeout(()=> showPop(k, dia), 380); }
+    });
+    k.addEventListener('pointerup', ()=>{ clearTimeout(lpTimer);
+      if(popEl){ closePop(); k.classList.remove('pressed'); return } act(k); });
+    k.addEventListener('pointerleave', ()=>{ clearTimeout(lpTimer); k.classList.remove('pressed'); });
+  });
+}
+function act(k){
+  const ch = k.dataset.ch, id = k.dataset.k;
+  if(ch !== undefined){ insert(shift && !symb ? ch.toUpperCase() : ch); if(shift===1) setShift(0); return }
+  switch(id){
+    case 'shift': setShift((shift+1)%3); break;
+    case 'bs': { const v = inp.value; inp.value = v.slice(0,-1); suggest(); break }
+    case 'space': insert(' '); break;
+    case 'enter': document.getElementById('send').click(); break;
+    case 'globe': lang = lang==='ru'?'en':'ru'; render(); break;
+    case 'mode': symb = symb===0?1:(symb===1?2:0); render(); break;
+    case 'page': symb = symb===2?1:2; render(); break;
+  }
+}
+function setShift(s){ shift = s; render() }
+
+/* ============ swipe on space ============ */
+/* (pointer events on space key — quick impl) */
+document.addEventListener('pointerdown', e=>{
+  const sp = e.target.closest('.key.space'); if(!sp) return;
+  let x0 = e.clientX;
+  const mv = ev => { if(Math.abs(ev.clientX - x0) > 55){ lang = lang==='ru'?'en':'ru'; render(); cleanup() } };
+  const cleanup = ()=>{ document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', cleanup) };
+  document.addEventListener('pointermove', mv); document.addEventListener('pointerup', cleanup);
+});
+
+/* ============ panels ============ */
+const clipBtn=document.getElementById('clipBtn'), kmBtn=document.getElementById('kmBtn');
+const clipPanel=document.getElementById('clipPanel'), kmPanel=document.getElementById('kmPanel');
+function refreshPanels(){
+  clipBtn.classList.toggle('on', clipPanel.classList.contains('on'));
+  kmBtn.classList.toggle('on', kmPanel.classList.contains('on'));
+  const any = clipPanel.classList.contains('on') || kmPanel.classList.contains('on');
+  document.getElementById('rows').style.display = any ? 'none' : 'grid';
+  document.querySelector('.hint').style.display = any ? 'none' : 'block';
+}
+clipBtn.onclick = ()=>{ kmPanel.classList.remove('on'); clipPanel.classList.toggle('on'); refreshPanels() };
+kmBtn.onclick = ()=>{ clipPanel.classList.remove('on'); kmPanel.classList.toggle('on'); refreshPanels() };
+
+/* ============ clipboard ============ */
+let clips = ['привет, я на месте ✌','встречаемся в 19:00 у входа','https://github.com/aezochka/m3e-keyboard','согласен, погнали','M3E = Material 3 Expressive'];
+function renderClips(){
+  document.getElementById('clipGrid').innerHTML = clips.map((c,i)=>
+    `<div class="clip" data-i="${i}"><p>${c}</p><button class="x" data-x="${i}">✕</button></div>`).join('');
+  document.querySelectorAll('.clip').forEach(el=> el.onclick = e=>{
+    if(e.target.dataset.x !== undefined){ clips.splice(+e.target.dataset.x,1); renderClips(); return }
+    insert(clips[+el.dataset.i]);
+  });
+}
+/* ============ kaomoji ============ */
+const KM = ['¯\\_(ツ)_/¯','( ͡° ͜ʖ ͡°)','ಠ_ಠ','(づ｡◕‿‿◕｡)づ','(ノ°▽°)ノ','ᕕ( ᐛ )ᕗ','(◍•ᴗ•◍)','(ง\'̀-\'́)ง','ʕ•ᴥ•ʔ','(づ￣ ³￣)づ','(✿◠‿◠)','(¬‿¬)','(ಥ_ಥ)','(⌐■_■)','ヽ(⌐■_■)ノ♪','ᕦ(ò_óˇ)ᕤ','(˶ᵔ ᵕ ᵔ˶)','(´｡• ᵕ •｡`)','(｡♥‿♥｡)','ʕ ꈍᴥꈍ ʔ','UwU','OwO',':3','xD','._.','✧(≖ ◡ ≖✿)','(ᵔᴥᵔ)'];
+document.getElementById('kmFlow').innerHTML = KM.map(k=>`<button class="km">${k}</button>`).join('');
+document.querySelectorAll('.km').forEach(b=> b.onclick = ()=> insert(b.textContent));
+
+/* ============ palettes UI ============ */
+const dots = document.getElementById('palettes');
+Object.keys(P).forEach(name=>{
+  const d = document.createElement('button'); d.className='dot';
+  d.style.background = P[name].light.pri;
+  if(name===pal) d.classList.add('active');
+  d.onclick = ()=>{ pal = name; document.querySelectorAll('.dot').forEach(x=>x.classList.remove('active')); d.classList.add('active'); applyTheme() };
+  dots.appendChild(d);
+});
+document.getElementById('darkBtn').onclick = ()=>{ dark=!dark; applyTheme() };
+document.getElementById('langBtn').onclick = ()=>{ lang = lang==='ru'?'en':'ru'; document.getElementById('langBtn').textContent = lang.toUpperCase(); render() };
+document.getElementById('gear').onclick = ()=> alert('в приложении: настройки приложения');
+
+['s1','s2','s3'].forEach(id => {
+  const b = document.getElementById(id);
+  b.onclick = () => {
+    const t = b.textContent; if(!t) return;
+    const v = inp.value, w = v.split(/\s+/).pop();
+    inp.value = v.slice(0, v.length - w.length) + t + ' ';
+    setSug('','','');
+  };
+});
+inp.addEventListener('input', suggest);
+applyTheme(); render(); renderClips();
+</script>
+</body>
+</html>
