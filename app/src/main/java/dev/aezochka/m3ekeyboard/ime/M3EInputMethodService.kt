@@ -5,11 +5,11 @@ import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.setContent
+import androidx.compose.ui.platform.AbstractComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -69,7 +69,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         super.onWindowHidden()
         if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.STOP)
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         }
     }
 
@@ -83,11 +83,17 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
     }
 
     override fun onCreateInputView(): View {
-        val view = ComposeView(this)
+        val view = ImeComposeView(this)
         view.setViewTreeLifecycleOwner(this)
         view.setViewTreeViewModelStoreOwner(this)
         view.setViewTreeSavedStateRegistryOwner(this)
-        view.setContent {
+        selfInputView = view
+        return view
+    }
+
+    private inner class ImeComposeView(context: android.content.Context) : AbstractComposeView(context) {
+        @Composable
+        override fun Content() {
             M3EKeyboardTheme(dynamic = prefsState.dynamicColors) {
                 KeyboardView(
                     prefs = prefsState,
@@ -101,8 +107,6 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                 )
             }
         }
-        selfInputView = view
-        return view
     }
 
     private fun commitKey(text: String) {
