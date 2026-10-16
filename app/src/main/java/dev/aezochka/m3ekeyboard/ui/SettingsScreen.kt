@@ -55,14 +55,12 @@ fun SettingsScreen() {
     val context = LocalContext.current
     var prefs by remember { mutableStateOf(KeyboardSettings.read(context)) }
     var imeEnabled by remember { mutableStateOf(isImeEnabled(context)) }
-    var imeSelected by remember { mutableStateOf(isImeSelected(context)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 imeEnabled = isImeEnabled(context)
-                imeSelected = isImeSelected(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -105,12 +103,6 @@ fun SettingsScreen() {
                         ok = imeEnabled,
                         title = stringResource(
                             if (imeEnabled) R.string.status_enabled else R.string.status_disabled
-                        ),
-                    )
-                    StatusRow(
-                        ok = imeSelected,
-                        title = stringResource(
-                            if (imeSelected) R.string.status_selected else R.string.status_not_selected
                         ),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -286,17 +278,6 @@ private fun SwitchRow(
 }
 
 private fun isImeEnabled(context: Context): Boolean {
-    val enabled = Settings.Secure.getString(
-        context.contentResolver,
-        Settings.Secure.ENABLED_INPUT_METHODS,
-    ) ?: return false
-    return enabled.split(":").any { it.startsWith(context.packageName) }
-}
-
-private fun isImeSelected(context: Context): Boolean {
-    val selected = Settings.Secure.getString(
-        context.contentResolver,
-        Settings.Secure.DEFAULT_INPUT_METHOD,
-    ) ?: return false
-    return selected.startsWith(context.packageName)
+    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    return imm.enabledInputMethodList.any { it.packageName == context.packageName }
 }
