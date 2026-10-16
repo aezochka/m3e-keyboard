@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -164,7 +165,7 @@ fun KeyboardView(
                 val c = if (shift != ShiftState.OFF) key.upper else key.text
                 onText(c)
             }
-            Key.Space -> onText(" ")
+            is Key.Space -> onText(" ")
             Key.Enter -> onEnter()
             Key.Backspace -> onDelete()
             Key.Shift -> shift = when (shift) {
@@ -175,6 +176,7 @@ fun KeyboardView(
             Key.Symbols -> layer = Layer.SYMBOLS
             Key.Letters -> layer = Layer.LETTERS
             Key.LayoutSwitch -> switchLayout()
+            is Key.Fill -> {}
         }
     }
 
@@ -364,6 +366,7 @@ fun KeyboardView(
                                             },
                                         )
                                     }
+                                    is Key.Fill -> Spacer(Modifier.weight(key.weight))
                                     Key.Shift -> KeyCap(
                                         modifier = Modifier.weight(key.weight).fillMaxHeight(),
                                         icon = when (shift) {
@@ -394,7 +397,7 @@ fun KeyboardView(
                                         repeatable = true,
                                         repeatAction = onDelete,
                                     )
-                                    Key.Space -> KeyCap(
+                                    is Key.Space -> KeyCap(
                                         modifier = Modifier.weight(key.weight).fillMaxHeight(),
                                         label = stringResource(spaceLabel),
                                         fontSize = 12.sp,
@@ -564,16 +567,16 @@ private fun MenuPanel(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             FunctionTile(
-                icon = Icons.Outlined.EmojiEmotions,
-                label = stringResource(R.string.menu_kaomoji),
-                modifier = Modifier.weight(1f),
-                onTap = onOpenKaomoji,
-            )
-            FunctionTile(
                 icon = Icons.Outlined.ContentPaste,
                 label = stringResource(R.string.menu_clipboard),
                 modifier = Modifier.weight(1f),
                 onTap = onOpenClipboard,
+            )
+            FunctionTile(
+                icon = Icons.Outlined.EmojiEmotions,
+                label = stringResource(R.string.menu_kaomoji),
+                modifier = Modifier.weight(1f),
+                onTap = onOpenKaomoji,
             )
         }
         Row(

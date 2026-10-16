@@ -11,13 +11,16 @@ sealed class Key {
         val upper: String get() = text.uppercase()
     }
 
-    object Shift : Key() { override val weight: Float get() = 1.6f }
-    object Backspace : Key() { override val weight: Float get() = 1.6f }
-    object Space : Key() { override val weight: Float get() = 4f }
+    class Space(override val weight: Float = 4f) : Key()
+
+    class Fill(override val weight: Float) : Key()
+
+    object Shift : Key() { override val weight: Float get() = 1f }
+    object Backspace : Key() { override val weight: Float get() = 1f }
     object Enter : Key() { override val weight: Float get() = 1.6f }
-    object Symbols : Key() { override val weight: Float get() = 1.6f }
-    object Letters : Key() { override val weight: Float get() = 1.6f }
-    object LayoutSwitch : Key() { override val weight: Float get() = 1.2f }
+    object Symbols : Key() { override val weight: Float get() = 1.5f }
+    object Letters : Key() { override val weight: Float get() = 1.5f }
+    object LayoutSwitch : Key() { override val weight: Float get() = 1.1f }
 }
 
 enum class Layer { LETTERS, SYMBOLS }
@@ -36,7 +39,8 @@ object Diacritics {
         "y" to "ýÿ",
     )
     private val ru = mapOf(
-        "е" to "ё",
+        "е" to "ёэ",
+        "ь" to "ъ",
     )
     private val punct = mapOf(
         "," to "…;",
@@ -59,41 +63,57 @@ object Diacritics {
 
 object Layouts {
 
-    private val enRows: List<List<Key.Char>> = listOf(
-        listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
-        listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
-        listOf("z", "x", "c", "v", "b", "n", "m"),
-    ).map { row -> row.map { Key.Char(it) } }
+    // EN: 10-column grid; all letters equal width, columns align.
+    private val enRows: List<List<Key>> = listOf(
+        listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p").map { Key.Char(it) },
+        listOf(Key.Fill(0.5f)) +
+            listOf("a", "s", "d", "f", "g", "h", "j", "k", "l").map { Key.Char(it) } +
+            listOf(Key.Fill(0.5f)),
+        listOf<Key>(Key.Shift) +
+            listOf("z", "x", "c", "v", "b", "n", "m").map { Key.Char(it) } +
+            listOf(Key.Fill(0.5f), Key.Fill(0.5f), Key.Backspace),
+    )
 
-    private val ruRows: List<List<Key.Char>> = listOf(
-        listOf("й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х", "ъ"),
-        listOf("ф", "ы", "в", "а", "п", "р", "о", "л", "д", "ж", "э"),
-        listOf("я", "ч", "с", "м", "и", "т", "ь", "б", "ю"),
-    ).map { row -> row.map { Key.Char(it) } }
+    // RU compact: ъ -> long-press on ь, ё/э -> long-press on е.
+    // 11/10/9 letters; every letter key is exactly the same width, row3 columns align with row1.
+    private val ruRows: List<List<Key>> = listOf(
+        listOf("й", "ц", "у", "к", "е", "н", "г", "ш", "щ", "з", "х").map { Key.Char(it) },
+        listOf(Key.Fill(0.5f)) +
+            listOf("ф", "ы", "в", "а", "п", "р", "о", "л", "д", "ж").map { Key.Char(it) } +
+            listOf(Key.Fill(0.5f)),
+        listOf<Key>(Key.Shift) +
+            listOf("я", "ч", "с", "м", "и", "т", "ь", "б", "ю").map { Key.Char(it) } +
+            listOf(Key.Backspace),
+    )
 
     private val symbolRows: List<List<Key>> = listOf(
-        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0"),
-        listOf("@", "#", "$", "%", "&", "-", "+", "(", ")"),
-        listOf("*", "\"", "'", ":", ";", "!", "?", "=", "<", ">"),
-    ).map { row -> row.map { Key.Char(it) } }
+        listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { Key.Char(it) },
+        listOf(Key.Fill(0.5f)) +
+            listOf("@", "#", "$", "%", "&", "-", "+", "(", ")").map { Key.Char(it) } +
+            listOf(Key.Fill(0.5f)),
+        listOf("*", "\"", "'", ":", ";", "!", "?", "=").map { Key.Char(it) } +
+            listOf(Key.Fill(0.5f), Key.Fill(0.5f), Key.Backspace),
+    )
 
     fun rows(layout: String, layer: Layer): List<List<Key>> {
-        val letterRows = if (layout == "ru") ruRows else enRows
-        val top = if (layer == Layer.SYMBOLS) symbolRows.subList(0, 2) else letterRows.subList(0, 2)
-        val third: List<Key> = if (layer == Layer.SYMBOLS) {
-            symbolRows[2] + listOf(Key.Backspace)
-        } else {
-            listOf<Key>(Key.Shift) + letterRows[2] + listOf<Key>(Key.Backspace)
+        val base = when {
+            layer == Layer.SYMBOLS -> symbolRows
+            layout == "ru" -> ruRows
+            else -> enRows
         }
-        return top + listOf(third, bottomRow(layer))
+        return base + listOf(bottomRow(layout, layer))
     }
 
-    private fun bottomRow(layer: Layer): List<Key> = listOf(
-        Key.LayoutSwitch,
-        if (layer == Layer.SYMBOLS) Key.Letters else Key.Symbols,
-        Key.Text(","),
-        Key.Space,
-        Key.Text("."),
-        Key.Enter,
-    )
+    private fun bottomRow(layout: String, layer: Layer): List<Key> {
+        val total = if (layout == "ru" && layer == Layer.LETTERS) 11f else 10f
+        val spaceWeight = total - (1.1f + 1.5f + 1f + 1f + 1.6f)
+        return listOf(
+            Key.LayoutSwitch,
+            if (layer == Layer.SYMBOLS) Key.Letters else Key.Symbols,
+            Key.Text(","),
+            Key.Space(spaceWeight),
+            Key.Text("."),
+            Key.Enter,
+        )
+    }
 }

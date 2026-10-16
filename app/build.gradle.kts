@@ -11,8 +11,8 @@ android {
         applicationId = "dev.aezochka.m3ekeyboard"
         minSdk = 26
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.7.0"
+        versionCode = 13
+        versionName = "1.8.0"
     }
 
     buildTypes {
