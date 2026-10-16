@@ -89,6 +89,7 @@ object Layouts {
     }
 
     private fun bottomRow(layer: Layer): List<Key> = listOf(
+        Key.LayoutSwitch,
         if (layer == Layer.SYMBOLS) Key.Letters else Key.Symbols,
         Key.Text(","),
         Key.Space,

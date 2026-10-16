@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -24,12 +25,18 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardCapslock
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -64,29 +71,36 @@ fun KeyboardView(
     prefs: KeyboardPrefs,
     initialLayout: String,
     enterLabel: String?,
+    suggestions: List<String> = emptyList(),
+    clipboardEntries: List<String> = emptyList(),
     onText: (String) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
     onTap: () -> Unit,
     onStrongTap: () -> Unit = onTap,
+    onSuggestion: (String) -> Unit = {},
+    onClipboardPaste: (String) -> Unit = {},
+    onClipboardClear: () -> Unit = {},
+    onOpenApp: () -> Unit = {},
     onLayoutChanged: (String) -> Unit,
 ) {
     var layout by remember { mutableStateOf(initialLayout) }
     var layer by remember { mutableStateOf(Layer.LETTERS) }
     var shift by remember { mutableStateOf(ShiftState.OFF) }
     var accentChoices by remember { mutableStateOf<List<String>?>(null) }
+    var clipboardOpen by remember { mutableStateOf(false) }
     var swipeAccum by remember { mutableStateOf(0f) }
 
     val scheme = MaterialTheme.colorScheme
-    val letterBg = if (prefs.accentKeys) scheme.primaryContainer else scheme.surfaceContainerHigh
-    val letterPressed = if (prefs.accentKeys) scheme.primary else scheme.surfaceContainerHighest
+    val letterBg = if (prefs.accentKeys) scheme.primaryContainer else scheme.surfaceContainerHighest
+    val letterPressed = if (prefs.accentKeys) scheme.primary else scheme.surfaceContainerHigh
     val letterContent = if (prefs.accentKeys) scheme.onPrimaryContainer else scheme.onSurface
-    val specialBg = scheme.surfaceContainerHighest
-    val specialPressed = scheme.surfaceContainerHigh
+    val specialBg = scheme.surfaceContainerHigh
+    val specialPressed = scheme.surfaceContainerHighest
     val specialContent = scheme.onSurfaceVariant
     val activeBg = scheme.secondaryContainer
     val activeContent = scheme.onSecondaryContainer
-    val rowHeight = (56f * prefs.keyHeightScale).dp
+    val rowHeight = (48f * prefs.keyHeightScale).dp
 
     val spaceLabel = if (layout == "ru") R.string.lang_name_ru else R.string.lang_name_en
 
@@ -97,6 +111,7 @@ fun KeyboardView(
 
     fun handle(key: Key) {
         accentChoices = null
+        clipboardOpen = false
         when (key) {
             is Key.Char -> {
                 val c = if (layer == Layer.LETTERS && shift != ShiftState.OFF) key.upper else key.base
@@ -124,11 +139,24 @@ fun KeyboardView(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(scheme.surfaceContainerLowest)
-            .padding(horizontal = 4.dp)
-            .padding(top = 2.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .background(scheme.surfaceContainerLow)
+            .padding(horizontal = 3.dp)
+            .padding(top = 2.dp, bottom = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        AnimatedVisibility(
+            visible = clipboardOpen,
+            enter = fadeIn(spring(stiffness = 500f)) +
+                expandVertically(spring(dampingRatio = 0.6f, stiffness = 350f)),
+            exit = shrinkVertically(spring(dampingRatio = 0.8f, stiffness = 600f)) + fadeOut(),
+        ) {
+            ClipboardPanel(
+                entries = clipboardEntries,
+                onPaste = onClipboardPaste,
+                onClear = onClipboardClear,
+            )
+        }
+
         AnimatedVisibility(
             visible = accentChoices != null,
             enter = fadeIn(spring(stiffness = 500f)) +
@@ -140,7 +168,7 @@ fun KeyboardView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 6.dp)
-                    .height(48.dp),
+                    .height(44.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 choices.forEach { c ->
@@ -151,8 +179,8 @@ fun KeyboardView(
                         container = scheme.secondaryContainer,
                         pressedContainer = scheme.secondary,
                         contentColor = scheme.onSecondaryContainer,
-                        cornerRadius = 24.dp,
-                        elevation = 3.dp,
+                        cornerRadius = 22.dp,
+                        elevation = 2.dp,
                         onTap = {
                             onTap()
                             onText(c)
@@ -163,15 +191,66 @@ fun KeyboardView(
             }
         }
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(38.dp)
+                .padding(horizontal = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ToolbarIcon(
+                icon = Icons.Outlined.ContentPaste,
+                container = if (clipboardOpen) activeBg else Color.Transparent,
+                contentColor = if (clipboardOpen) activeContent else specialContent,
+                onTap = {
+                    onStrongTap()
+                    accentChoices = null
+                    clipboardOpen = !clipboardOpen
+                },
+            )
+            suggestions.forEach { s ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            onTap()
+                            onSuggestion(s)
+                        }
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = s,
+                        color = scheme.onSurface,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                    )
+                }
+            }
+            ToolbarIcon(
+                icon = Icons.Outlined.Settings,
+                container = Color.Transparent,
+                contentColor = specialContent,
+                onTap = {
+                    onStrongTap()
+                    onOpenApp()
+                },
+            )
+        }
+
         Layouts.rows(layout, layer).forEachIndexed { rowIndex, row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(rowHeight),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 row.forEachIndexed { colIndex, key ->
-                    val entrance = (rowIndex * 45 + colIndex * 12)
+                    val entrance = (rowIndex * 40 + colIndex * 10)
                     when (key) {
                         is Key.Char -> {
                             val variants = Diacritics.variants(layout, layer, key.base)
@@ -181,6 +260,7 @@ fun KeyboardView(
                                 container = letterBg,
                                 pressedContainer = letterPressed,
                                 contentColor = letterContent,
+                                fontSize = 19.sp,
                                 entranceDelayMillis = entrance,
                                 onTap = { onTap(); handle(key) },
                                 onLongPress = variants?.let { vs ->
@@ -193,7 +273,7 @@ fun KeyboardView(
                             KeyCap(
                                 modifier = Modifier.weight(key.weight).fillMaxHeight(),
                                 label = if (shift != ShiftState.OFF) key.upper else key.text,
-                                fontSize = 17.sp,
+                                fontSize = 16.sp,
                                 container = specialBg,
                                 pressedContainer = specialPressed,
                                 contentColor = specialContent,
@@ -214,7 +294,7 @@ fun KeyboardView(
                             container = if (shift == ShiftState.OFF) specialBg else activeBg,
                             pressedContainer = specialPressed,
                             contentColor = if (shift == ShiftState.OFF) specialContent else activeContent,
-                            cornerRadius = 20.dp,
+                            cornerRadius = 18.dp,
                             border = shift == ShiftState.LOCKED,
                             borderColor = scheme.secondary,
                             entranceDelayMillis = entrance,
@@ -226,7 +306,7 @@ fun KeyboardView(
                             container = specialBg,
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
-                            cornerRadius = 20.dp,
+                            cornerRadius = 18.dp,
                             entranceDelayMillis = entrance,
                             onTap = { onStrongTap() },
                             repeatable = true,
@@ -235,11 +315,11 @@ fun KeyboardView(
                         Key.Space -> KeyCap(
                             modifier = Modifier.weight(key.weight).fillMaxHeight(),
                             label = stringResource(spaceLabel),
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             container = specialBg,
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
-                            cornerRadius = 28.dp,
+                            cornerRadius = 24.dp,
                             pressedCornerScale = 1.1f,
                             entranceDelayMillis = entrance,
                             onTap = { onTap(); handle(key) },
@@ -255,19 +335,19 @@ fun KeyboardView(
                         Key.Enter -> KeyCap(
                             modifier = Modifier.weight(key.weight).fillMaxHeight(),
                             label = enterLabel ?: "↵",
-                            fontSize = if ((enterLabel?.length ?: 1) > 4) 12.sp else 16.sp,
+                            fontSize = if ((enterLabel?.length ?: 1) > 4) 12.sp else 15.sp,
                             container = scheme.tertiaryContainer,
                             pressedContainer = scheme.tertiary,
                             contentColor = scheme.onTertiaryContainer,
-                            cornerRadius = 20.dp,
-                            pressedCornerScale = 1.8f,
+                            cornerRadius = 18.dp,
+                            pressedCornerScale = 1.7f,
                             entranceDelayMillis = entrance,
                             onTap = { onStrongTap(); handle(key) },
                         )
                         Key.Symbols -> KeyCap(
                             modifier = Modifier.weight(key.weight).fillMaxHeight(),
                             label = "?123",
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             container = specialBg,
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
@@ -277,7 +357,7 @@ fun KeyboardView(
                         Key.Letters -> KeyCap(
                             modifier = Modifier.weight(key.weight).fillMaxHeight(),
                             label = "ABC",
-                            fontSize = 15.sp,
+                            fontSize = 14.sp,
                             container = specialBg,
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
@@ -286,11 +366,11 @@ fun KeyboardView(
                         )
                         Key.LayoutSwitch -> KeyCap(
                             modifier = Modifier.weight(key.weight).fillMaxHeight(),
-                            label = "🌐",
-                            fontSize = 18.sp,
+                            icon = Icons.Filled.Language,
                             container = specialBg,
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
+                            cornerRadius = 18.dp,
                             entranceDelayMillis = entrance,
                             onTap = { onStrongTap(); handle(key) },
                         )
@@ -302,17 +382,104 @@ fun KeyboardView(
 }
 
 @Composable
+private fun ToolbarIcon(
+    icon: ImageVector,
+    container: Color,
+    contentColor: Color,
+    onTap: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(container)
+            .clickable { onTap() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(22.dp),
+        )
+    }
+}
+
+@Composable
+private fun ClipboardPanel(
+    entries: List<String>,
+    onPaste: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (entries.isEmpty()) {
+            Text(
+                text = stringResource(R.string.clip_empty),
+                color = scheme.onSurfaceVariant,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+            )
+        } else {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                entries.forEach { entry ->
+                    ClipChip(text = entry, onClick = { onPaste(entry) })
+                }
+            }
+            ToolbarIcon(
+                icon = Icons.Outlined.Delete,
+                container = Color.Transparent,
+                contentColor = scheme.onSurfaceVariant,
+                onTap = onClear,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ClipChip(text: String, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val short = text.replace("\n", " ").let { if (it.length > 30) it.take(30) + "…" else it }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(scheme.surfaceContainerHighest)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = short,
+            color = scheme.onSurface,
+            fontSize = 14.sp,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 fun KeyCap(
     modifier: Modifier = Modifier,
     label: String? = null,
     icon: ImageVector? = null,
-    fontSize: TextUnit = 21.sp,
+    fontSize: TextUnit = 19.sp,
     container: Color,
     pressedContainer: Color,
     contentColor: Color,
-    cornerRadius: Dp = 18.dp,
+    cornerRadius: Dp = 16.dp,
     pressedCornerScale: Float = 1.5f,
-    elevation: Dp = 2.dp,
+    elevation: Dp = 1.dp,
     border: Boolean = false,
     borderColor: Color = Color.Unspecified,
     onTap: () -> Unit = {},
@@ -340,7 +507,7 @@ fun KeyCap(
         label = "bg",
     )
     val shade by animateDpAsState(
-        targetValue = if (pressed) elevation + 4.dp else elevation,
+        targetValue = if (pressed) elevation + 3.dp else elevation,
         animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
         label = "shade",
     )

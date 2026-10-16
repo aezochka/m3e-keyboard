@@ -37,6 +37,7 @@
 
     <string name="language_title">Язык по умолчанию</string>
     <string name="swipe_hint">Свайп по пробелу влево/вправо меняет язык</string>
+    <string name="clip_empty">Буфер обмена пуст</string>
     <string name="preview_title">Предпросмотр</string>
     <string name="try_here">Попробуй клавиатуру здесь</string>
 </resources>
