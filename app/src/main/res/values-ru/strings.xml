@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">M3E Keyboard</string>
+    <string name="keyboard_name">M3E Keyboard</string>
+    <string name="subtype_en">Английский (США)</string>
+    <string name="subtype_ru">Русский (Россия)</string>
+
+    <string name="action_go">ПЕРЕЙТИ</string>
+    <string name="action_search">ПОИСК</string>
+    <string name="action_send">ОТПР.</string>
+    <string name="action_done">ГОТОВО</string>
+    <string name="action_next">ДАЛЕЕ</string>
+
+    <string name="lang_name_en">English</string>
+    <string name="lang_name_ru">Русский</string>
+
+    <string name="setup_title">Настройка</string>
+    <string name="status_enabled">Клавиатура включена</string>
+    <string name="status_disabled">Клавиатура ещё не включена</string>
+    <string name="status_selected">Выбрана активной клавиатурой</string>
+    <string name="status_not_selected">Не выбрана активной клавиатурой</string>
+    <string name="btn_open_ime_settings">Включить в настройках</string>
+    <string name="btn_pick_ime">Выбрать клавиатуру</string>
+
+    <string name="appearance_title">Внешний вид</string>
+    <string name="dynamic_colors">Цвета Material You</string>
+    <string name="dynamic_colors_sub">Системные цвета с обоев (Android 12+)</string>
+    <string name="haptics">Вибрация при нажатии</string>
+    <string name="haptics_sub">Вибрировать при нажатии клавиш</string>
+
+    <string name="height_title">Высота клавиш</string>
+    <string name="height_compact">Компакт</string>
+    <string name="height_normal">Обычно</string>
+    <string name="height_tall">Крупно</string>
+
+    <string name="language_title">Язык по умолчанию</string>
+    <string name="preview_title">Предпросмотр</string>
+</resources>

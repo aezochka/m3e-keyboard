@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">M3E Keyboard</string>
+    <string name="keyboard_name">M3E Keyboard</string>
+    <string name="subtype_en">English (US)</string>
+    <string name="subtype_ru">Russian (RU)</string>
+
+    <string name="action_go">GO</string>
+    <string name="action_search">SEARCH</string>
+    <string name="action_send">SEND</string>
+    <string name="action_done">DONE</string>
+    <string name="action_next">NEXT</string>
+
+    <string name="lang_name_en">English</string>
+    <string name="lang_name_ru">Русский</string>
+
+    <string name="setup_title">Setup</string>
+    <string name="status_enabled">Keyboard enabled</string>
+    <string name="status_disabled">Keyboard not enabled yet</string>
+    <string name="status_selected">Selected as active keyboard</string>
+    <string name="status_not_selected">Not selected as active keyboard</string>
+    <string name="btn_open_ime_settings">Enable in settings</string>
+    <string name="btn_pick_ime">Select keyboard</string>
+
+    <string name="appearance_title">Appearance</string>
+    <string name="dynamic_colors">Material You colors</string>
+    <string name="dynamic_colors_sub">Use wallpaper-derived system colors (Android 12+)</string>
+    <string name="haptics">Haptic feedback</string>
+    <string name="haptics_sub">Vibrate on key press</string>
+
+    <string name="height_title">Key height</string>
+    <string name="height_compact">Compact</string>
+    <string name="height_normal">Normal</string>
+    <string name="height_tall">Tall</string>
+
+    <string name="language_title">Default language</string>
+    <string name="preview_title">Preview</string>
+</resources>
