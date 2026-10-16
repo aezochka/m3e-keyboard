@@ -155,7 +155,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
             selfInputView?.performHapticFeedback(constant)
         }
         if (prefsState.sound) {
-            (getSystemService(AUDIO_SERVICE) as? AudioManager)?.playSoundEffect(AudioManager.FX_KEY_CLICK, -1)
+            (getSystemService(AUDIO_SERVICE) as? AudioManager)?.playSoundEffect(AudioManager.FX_KEY_CLICK, -1f)
         }
     }
 
