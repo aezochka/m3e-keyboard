@@ -1,6 +1,7 @@
 package dev.aezochka.m3ekeyboard.ime
 
 import android.inputmethodservice.InputMethodService
+import android.media.AudioManager
 import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
@@ -110,7 +111,8 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                     onText = { text -> commitKey(text) },
                     onDelete = { deleteBeforeCursor() },
                     onEnter = { sendEnter() },
-                    onTap = { tapFeedback() },
+                    onTap = { tapFeedback(false) },
+                    onStrongTap = { tapFeedback(true) },
                     onLayoutChanged = { layout -> saveLayout(layout) },
                 )
             }
@@ -147,9 +149,14 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         }
     }
 
-    private fun tapFeedback() {
-        if (!prefsState.haptics) return
-        selfInputView?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    private fun tapFeedback(strong: Boolean) {
+        if (prefsState.haptics) {
+            val constant = if (strong) HapticFeedbackConstants.CONTEXT_CLICK else HapticFeedbackConstants.KEYBOARD_TAP
+            selfInputView?.performHapticFeedback(constant)
+        }
+        if (prefsState.sound) {
+            (getSystemService(AUDIO_SERVICE) as? AudioManager)?.playSoundEffect(AudioManager.FX_KEY_CLICK, -1)
+        }
     }
 
     private fun saveLayout(layout: String) {

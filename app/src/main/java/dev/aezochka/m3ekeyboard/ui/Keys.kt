@@ -7,7 +7,9 @@ sealed class Key {
         val upper: String get() = base.uppercase()
     }
 
-    class Text(val text: String, override val weight: Float = 1f) : Key()
+    class Text(val text: String, override val weight: Float = 1f) : Key() {
+        val upper: String get() = text.uppercase()
+    }
 
     object Shift : Key() { override val weight: Float get() = 1.6f }
     object Backspace : Key() { override val weight: Float get() = 1.6f }
@@ -20,6 +22,40 @@ sealed class Key {
 
 enum class Layer { LETTERS, SYMBOLS }
 enum class ShiftState { OFF, ON, LOCKED }
+
+object Diacritics {
+    private val en = mapOf(
+        "a" to "áàâäãå",
+        "e" to "éèêë",
+        "i" to "íìîï",
+        "o" to "óòôöõ",
+        "u" to "úùûü",
+        "c" to "ç",
+        "n" to "ñ",
+        "s" to "ß",
+        "y" to "ýÿ",
+    )
+    private val ru = mapOf(
+        "е" to "ё",
+    )
+    private val punct = mapOf(
+        "," to "…;",
+        "." to "…",
+        "!" to "¡",
+        "?" to "¿",
+        "-" to "—–",
+        "'" to "\"«»",
+    )
+
+    fun variants(layout: String, layer: Layer, base: String): List<String>? {
+        if (layer == Layer.LETTERS) {
+            (if (layout == "ru") ru else en)[base]?.let { raw ->
+                return raw.map { it.toString() }
+            }
+        }
+        return punct[base]?.let { raw -> raw.map { it.toString() } }
+    }
+}
 
 object Layouts {
 

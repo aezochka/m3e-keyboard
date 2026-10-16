@@ -7,8 +7,10 @@ import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -41,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -55,6 +59,7 @@ fun SettingsScreen() {
     val context = LocalContext.current
     var prefs by remember { mutableStateOf(KeyboardSettings.read(context)) }
     var imeEnabled by remember { mutableStateOf(isImeEnabled(context)) }
+    var testText by remember { mutableStateOf("") }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -85,10 +90,21 @@ fun SettingsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    containerColor = if (imeEnabled) {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    },
                 ),
             ) {
                 Column(
@@ -136,6 +152,12 @@ fun SettingsScreen() {
                         style = MaterialTheme.typography.titleLarge,
                     )
                     SwitchRow(
+                        title = stringResource(R.string.accent_keys),
+                        subtitle = stringResource(R.string.accent_keys_sub),
+                        checked = prefs.accentKeys,
+                        onChange = { update(prefs.copy(accentKeys = it)) },
+                    )
+                    SwitchRow(
                         title = stringResource(R.string.dynamic_colors),
                         subtitle = stringResource(R.string.dynamic_colors_sub),
                         checked = prefs.dynamicColors,
@@ -146,6 +168,12 @@ fun SettingsScreen() {
                         subtitle = stringResource(R.string.haptics_sub),
                         checked = prefs.haptics,
                         onChange = { update(prefs.copy(haptics = it)) },
+                    )
+                    SwitchRow(
+                        title = stringResource(R.string.key_sound),
+                        subtitle = stringResource(R.string.key_sound_sub),
+                        checked = prefs.sound,
+                        onChange = { update(prefs.copy(sound = it)) },
                     )
                 }
             }
@@ -210,6 +238,11 @@ fun SettingsScreen() {
                             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                         ) { Text(stringResource(R.string.lang_name_ru)) }
                     }
+                    Text(
+                        stringResource(R.string.swipe_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -227,6 +260,13 @@ fun SettingsScreen() {
                         stringResource(R.string.preview_title),
                         style = MaterialTheme.typography.titleLarge,
                     )
+                    OutlinedTextField(
+                        value = testText,
+                        onValueChange = { testText = it },
+                        placeholder = { Text(stringResource(R.string.try_here)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
                     KeyboardView(
                         prefs = prefs,
                         initialLayout = prefs.layout,
@@ -239,6 +279,7 @@ fun SettingsScreen() {
                     )
                 }
             }
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
@@ -252,7 +293,7 @@ private fun StatusRow(ok: Boolean, title: String) {
             tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
             modifier = Modifier.size(22.dp),
         )
-        androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(10.dp))
         Text(title, style = MaterialTheme.typography.bodyLarge)
     }
 }

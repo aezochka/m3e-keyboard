@@ -17,16 +17,18 @@
     <string name="setup_title">Настройка</string>
     <string name="status_enabled">Клавиатура включена</string>
     <string name="status_disabled">Клавиатура ещё не включена</string>
-    <string name="status_selected">Выбрана активной клавиатурой</string>
-    <string name="status_not_selected">Не выбрана активной клавиатурой</string>
     <string name="btn_open_ime_settings">Включить в настройках</string>
     <string name="btn_pick_ime">Выбрать клавиатуру</string>
 
     <string name="appearance_title">Внешний вид</string>
+    <string name="accent_keys">Яркие клавиши</string>
+    <string name="accent_keys_sub">Пастельные клавиши в цветах твоей темы</string>
     <string name="dynamic_colors">Цвета Material You</string>
     <string name="dynamic_colors_sub">Системные цвета с обоев (Android 12+)</string>
     <string name="haptics">Вибрация при нажатии</string>
     <string name="haptics_sub">Вибрировать при нажатии клавиш</string>
+    <string name="key_sound">Звук клавиш</string>
+    <string name="key_sound_sub">Щелчок при нажатии клавиш</string>
 
     <string name="height_title">Высота клавиш</string>
     <string name="height_compact">Компакт</string>
@@ -34,5 +36,7 @@
     <string name="height_tall">Крупно</string>
 
     <string name="language_title">Язык по умолчанию</string>
+    <string name="swipe_hint">Свайп по пробелу влево/вправо меняет язык</string>
     <string name="preview_title">Предпросмотр</string>
+    <string name="try_here">Попробуй клавиатуру здесь</string>
 </resources>
