@@ -16,6 +16,7 @@
 
     <string name="setup_title">Setup</string>
     <string name="status_enabled">Keyboard enabled</string>
+    <string name="setup_waiting">Waiting for you to enable the keyboard</string>
     <string name="status_disabled">Keyboard not enabled yet</string>
     <string name="btn_open_ime_settings">Enable in settings</string>
     <string name="btn_pick_ime">Select keyboard</string>

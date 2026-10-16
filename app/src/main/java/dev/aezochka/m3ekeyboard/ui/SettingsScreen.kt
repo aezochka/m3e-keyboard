@@ -23,6 +23,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -53,7 +55,7 @@ import dev.aezochka.m3ekeyboard.R
 import dev.aezochka.m3ekeyboard.settings.KeyboardPrefs
 import dev.aezochka.m3ekeyboard.settings.KeyboardSettings
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
@@ -121,6 +123,17 @@ fun SettingsScreen() {
                             if (imeEnabled) R.string.status_enabled else R.string.status_disabled
                         ),
                     )
+                    if (!imeEnabled) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                stringResource(R.string.setup_waiting),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedButton(onClick = {
                             context.startActivity(

@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package dev.aezochka.m3ekeyboard.ui
 
 import androidx.compose.animation.AnimatedContent
@@ -51,6 +53,9 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -67,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -131,7 +137,7 @@ fun KeyboardView(
     val lettersFont = if (layout == "ru") 17.sp else 19.sp
 
     val digitsH = if (prefs.digitsRow) 48.dp else 0.dp
-    val fixedHeight = 38.dp + 8.dp + (rowHeight * 4f) + 24.dp + digitsH + 6.dp
+    val fixedHeight = 46.dp + 8.dp + (rowHeight * 4f) + 24.dp + digitsH + 6.dp
 
     val spaceLabel = if (layout == "ru") R.string.lang_name_ru else R.string.lang_name_en
 
@@ -175,13 +181,14 @@ fun KeyboardView(
             .height(fixedHeight),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(38.dp)
-                .padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .height(46.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+        HorizontalFloatingToolbar(
+            modifier = Modifier.fillMaxWidth(),
         ) {
             ToolbarIcon(
                 icon = Icons.Outlined.Menu,
@@ -225,6 +232,7 @@ fun KeyboardView(
                     onOpenApp()
                 },
             )
+        }
         }
 
         AnimatedContent(
@@ -371,6 +379,7 @@ fun KeyboardView(
                                         contentColor = specialContent,
                                         cornerRadius = 24.dp,
                                         pressedCornerScale = 1.04f,
+                                        staticShape = MaterialShapes.Pill.toShape(),
                                         entranceDelayMillis = entrance,
                                         entranceEnabled = entranceArmed,
                                         onTap = { onTap(); handle(key) },
@@ -392,6 +401,7 @@ fun KeyboardView(
                                         contentColor = scheme.onTertiaryContainer,
                                         cornerRadius = 18.dp,
                                         pressedCornerScale = 1.2f,
+                                        staticShape = MaterialShapes.Pill.toShape(),
                                         entranceDelayMillis = entrance,
                                         entranceEnabled = entranceArmed,
                                         onTap = { onStrongTap(); handle(key) },
@@ -483,7 +493,7 @@ private fun AccentPanel(choices: List<String>, onPick: (String) -> Unit) {
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(28.dp))
+                        .clip(MaterialShapes.Cookie9Sided.toShape())
                         .background(scheme.secondaryContainer)
                         .clickable { onPick(c) },
                     contentAlignment = Alignment.Center,
@@ -621,7 +631,7 @@ private fun KaomojiFlow(onInsert: (String) -> Unit) {
         Kaomoji.ALL.forEach { k ->
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
+                    .clip(MaterialShapes.Pill.toShape())
                     .background(scheme.secondaryContainer)
                     .clickable { onInsert(k) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -726,6 +736,7 @@ fun KeyCap(
     contentColor: Color,
     cornerRadius: Dp = 16.dp,
     pressedCornerScale: Float = 1.2f,
+    staticShape: Shape? = null,
     border: Boolean = false,
     borderColor: Color = Color.Unspecified,
     onTap: () -> Unit = {},
@@ -788,7 +799,7 @@ fun KeyCap(
         }
     }
 
-    val cornerShape = RoundedCornerShape(corner)
+    val cornerShape = staticShape ?: RoundedCornerShape(corner)
 
     Box(
         modifier = modifier
