@@ -172,7 +172,7 @@ fun KeyboardView(
                 ShiftState.ON -> ShiftState.LOCKED
                 ShiftState.LOCKED -> ShiftState.OFF
             }
-            is ModeSwitch -> layer = key.target
+            is Key.ModeSwitch -> layer = key.target
             Key.LayoutSwitch -> switchLayout()
             is Key.Fill -> {}
         }
@@ -430,7 +430,7 @@ fun KeyboardView(
                                         entranceEnabled = entranceArmed,
                                         onTap = { onStrongTap(); handle(key) },
                                     )
-                                    is ModeSwitch -> KeyCap(
+                                    is Key.ModeSwitch -> KeyCap(
                                         modifier = Modifier.weight(key.weight).fillMaxHeight(),
                                         label = when (key.target) {
                                             Layer.LETTERS -> "ABC"
