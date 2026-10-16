@@ -174,7 +174,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
 
     private fun commitSuggestion(word: String) {
         val ic = currentInputConnection ?: return
-        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: ""
         val prefix = before.takeLastWhile { it.isLetter() }
         ic.beginBatchEdit()
         if (prefix.isNotEmpty()) {
@@ -222,7 +222,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
             suggestionsState = emptyList()
             return
         }
-        val before = ic.getTextBeforeCursor(48, 0) ?: ""
+        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: ""
         val word = before.takeLastWhile { it.isLetter() }
         suggestionsState = if (word.length >= 2) {
             Suggest.suggest(word, layoutState)
