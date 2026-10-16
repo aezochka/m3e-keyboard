@@ -188,6 +188,7 @@ fun KeyboardView(
             contentAlignment = Alignment.Center,
         ) {
         HorizontalFloatingToolbar(
+            expanded = false,
             modifier = Modifier.fillMaxWidth(),
         ) {
             ToolbarIcon(
