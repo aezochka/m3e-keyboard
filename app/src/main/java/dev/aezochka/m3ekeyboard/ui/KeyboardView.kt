@@ -20,21 +20,29 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardCapslock
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentPaste
-import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -51,12 +59,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -80,6 +88,7 @@ fun KeyboardView(
     onStrongTap: () -> Unit = onTap,
     onSuggestion: (String) -> Unit = {},
     onClipboardPaste: (String) -> Unit = {},
+    onClipboardDelete: (String) -> Unit = {},
     onClipboardClear: () -> Unit = {},
     onOpenApp: () -> Unit = {},
     onLayoutChanged: (String) -> Unit,
@@ -89,6 +98,7 @@ fun KeyboardView(
     var shift by remember { mutableStateOf(ShiftState.OFF) }
     var accentChoices by remember { mutableStateOf<List<String>?>(null) }
     var clipboardOpen by remember { mutableStateOf(false) }
+    var kaomojiOpen by remember { mutableStateOf(false) }
     var swipeAccum by remember { mutableStateOf(0f) }
 
     val scheme = MaterialTheme.colorScheme
@@ -101,6 +111,7 @@ fun KeyboardView(
     val activeBg = scheme.secondaryContainer
     val activeContent = scheme.onSecondaryContainer
     val rowHeight = (48f * prefs.keyHeightScale).dp
+    val lettersFont = if (layout == "ru") 17.sp else 19.sp
 
     val spaceLabel = if (layout == "ru") R.string.lang_name_ru else R.string.lang_name_en
 
@@ -112,6 +123,7 @@ fun KeyboardView(
     fun handle(key: Key) {
         accentChoices = null
         clipboardOpen = false
+        kaomojiOpen = false
         when (key) {
             is Key.Char -> {
                 val c = if (layer == Layer.LETTERS && shift != ShiftState.OFF) key.upper else key.base
@@ -140,28 +152,39 @@ fun KeyboardView(
         modifier = Modifier
             .fillMaxWidth()
             .background(scheme.surfaceContainerLow)
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 3.dp)
             .padding(top = 2.dp, bottom = 6.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AnimatedVisibility(
             visible = clipboardOpen,
-            enter = fadeIn(spring(stiffness = 500f)) +
-                expandVertically(spring(dampingRatio = 0.6f, stiffness = 350f)),
-            exit = shrinkVertically(spring(dampingRatio = 0.8f, stiffness = 600f)) + fadeOut(),
+            enter = fadeIn(spring(stiffness = 400f)) +
+                expandVertically(spring(dampingRatio = 0.9f, stiffness = 300f)),
+            exit = shrinkVertically(spring(dampingRatio = 0.9f, stiffness = 450f)) + fadeOut(),
         ) {
             ClipboardPanel(
                 entries = clipboardEntries,
                 onPaste = onClipboardPaste,
-                onClear = onClipboardClear,
+                onDelete = onClipboardDelete,
+                onClearAll = onClipboardClear,
             )
         }
 
         AnimatedVisibility(
+            visible = kaomojiOpen,
+            enter = fadeIn(spring(stiffness = 400f)) +
+                expandVertically(spring(dampingRatio = 0.9f, stiffness = 300f)),
+            exit = shrinkVertically(spring(dampingRatio = 0.9f, stiffness = 450f)) + fadeOut(),
+        ) {
+            KaomojiPanel(onInsert = { onText(it) })
+        }
+
+        AnimatedVisibility(
             visible = accentChoices != null,
-            enter = fadeIn(spring(stiffness = 500f)) +
-                expandVertically(spring(dampingRatio = 0.6f, stiffness = 350f)),
-            exit = shrinkVertically(spring(dampingRatio = 0.8f, stiffness = 600f)) + fadeOut(),
+            enter = fadeIn(spring(stiffness = 400f)) +
+                expandVertically(spring(dampingRatio = 0.9f, stiffness = 300f)),
+            exit = shrinkVertically(spring(dampingRatio = 0.9f, stiffness = 450f)) + fadeOut(),
         ) {
             val choices = accentChoices.orEmpty()
             Row(
@@ -180,7 +203,7 @@ fun KeyboardView(
                         pressedContainer = scheme.secondary,
                         contentColor = scheme.onSecondaryContainer,
                         cornerRadius = 22.dp,
-                        elevation = 2.dp,
+                        elevation = 1.dp,
                         onTap = {
                             onTap()
                             onText(c)
@@ -206,7 +229,19 @@ fun KeyboardView(
                 onTap = {
                     onStrongTap()
                     accentChoices = null
+                    kaomojiOpen = false
                     clipboardOpen = !clipboardOpen
+                },
+            )
+            ToolbarIcon(
+                icon = Icons.Outlined.EmojiEmotions,
+                container = if (kaomojiOpen) activeBg else Color.Transparent,
+                contentColor = if (kaomojiOpen) activeContent else specialContent,
+                onTap = {
+                    onStrongTap()
+                    accentChoices = null
+                    clipboardOpen = false
+                    kaomojiOpen = !kaomojiOpen
                 },
             )
             suggestions.forEach { s ->
@@ -228,6 +263,7 @@ fun KeyboardView(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -250,7 +286,7 @@ fun KeyboardView(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 row.forEachIndexed { colIndex, key ->
-                    val entrance = (rowIndex * 40 + colIndex * 10)
+                    val entrance = (rowIndex * 30 + colIndex * 6)
                     when (key) {
                         is Key.Char -> {
                             val variants = Diacritics.variants(layout, layer, key.base)
@@ -260,7 +296,7 @@ fun KeyboardView(
                                 container = letterBg,
                                 pressedContainer = letterPressed,
                                 contentColor = letterContent,
-                                fontSize = 19.sp,
+                                fontSize = lettersFont,
                                 entranceDelayMillis = entrance,
                                 onTap = { onTap(); handle(key) },
                                 onLongPress = variants?.let { vs ->
@@ -320,7 +356,7 @@ fun KeyboardView(
                             pressedContainer = specialPressed,
                             contentColor = specialContent,
                             cornerRadius = 24.dp,
-                            pressedCornerScale = 1.1f,
+                            pressedCornerScale = 1.04f,
                             entranceDelayMillis = entrance,
                             onTap = { onTap(); handle(key) },
                             onSwipeHorizontal = { delta ->
@@ -340,7 +376,7 @@ fun KeyboardView(
                             pressedContainer = scheme.tertiary,
                             contentColor = scheme.onTertiaryContainer,
                             cornerRadius = 18.dp,
-                            pressedCornerScale = 1.7f,
+                            pressedCornerScale = 1.25f,
                             entranceDelayMillis = entrance,
                             onTap = { onStrongTap(); handle(key) },
                         )
@@ -409,62 +445,104 @@ private fun ToolbarIcon(
 private fun ClipboardPanel(
     entries: List<String>,
     onPaste: (String) -> Unit,
-    onClear: () -> Unit,
+    onDelete: (String) -> Unit,
+    onClearAll: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 6.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (entries.isEmpty()) {
             Text(
                 text = stringResource(R.string.clip_empty),
                 color = scheme.onSurfaceVariant,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
             )
         } else {
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                entries.forEach { entry ->
-                    ClipChip(text = entry, onClick = { onPaste(entry) })
+            entries.take(5).forEach { entry ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(scheme.surfaceContainerHighest)
+                        .clickable { onPaste(entry) }
+                        .padding(start = 14.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = entry.replace("\n", " ")
+                            .let { if (it.length > 80) it.take(80) + "…" else it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 10.dp),
+                        color = scheme.onSurface,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onDelete(entry) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = null,
+                            tint = scheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
             }
-            ToolbarIcon(
-                icon = Icons.Outlined.Delete,
-                container = Color.Transparent,
-                contentColor = scheme.onSurfaceVariant,
-                onTap = onClear,
+            Text(
+                text = stringResource(R.string.clip_clear_all),
+                color = scheme.primary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onClearAll() }
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
             )
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ClipChip(text: String, onClick: () -> Unit) {
+private fun KaomojiPanel(onInsert: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val short = text.replace("\n", " ").let { if (it.length > 30) it.take(30) + "…" else it }
-    Box(
+    FlowRow(
         modifier = Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(scheme.surfaceContainerHighest)
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center,
+            .fillMaxWidth()
+            .heightIn(max = 108.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = short,
-            color = scheme.onSurface,
-            fontSize = 14.sp,
-            maxLines = 1,
-        )
+        Kaomoji.ALL.forEach { k ->
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(scheme.secondaryContainer)
+                    .clickable { onInsert(k) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = k,
+                    color = scheme.onSecondaryContainer,
+                    fontSize = 15.sp,
+                )
+            }
+        }
     }
 }
 
@@ -478,7 +556,7 @@ fun KeyCap(
     pressedContainer: Color,
     contentColor: Color,
     cornerRadius: Dp = 16.dp,
-    pressedCornerScale: Float = 1.5f,
+    pressedCornerScale: Float = 1.12f,
     elevation: Dp = 1.dp,
     border: Boolean = false,
     borderColor: Color = Color.Unspecified,
@@ -494,12 +572,12 @@ fun KeyCap(
 
     val corner by animateDpAsState(
         targetValue = if (pressed) cornerRadius * pressedCornerScale else cornerRadius,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 600f),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 350f),
         label = "corner",
     )
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.92f else 1f,
-        animationSpec = spring(dampingRatio = 0.3f, stiffness = 900f),
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 450f),
         label = "scale",
     )
     val bg by animateColorAsState(
@@ -507,15 +585,15 @@ fun KeyCap(
         label = "bg",
     )
     val shade by animateDpAsState(
-        targetValue = if (pressed) elevation + 3.dp else elevation,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+        targetValue = if (pressed) elevation + 2.dp else elevation,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 350f),
         label = "shade",
     )
 
-    val appear = remember { Animatable(0.55f) }
+    val appear = remember { Animatable(0.88f) }
     LaunchedEffect(Unit) {
         delay(entranceDelayMillis.toLong())
-        appear.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 350f))
+        appear.animateTo(1f, spring(dampingRatio = 0.85f, stiffness = 240f))
     }
 
     var longFired by remember { mutableStateOf(false) }

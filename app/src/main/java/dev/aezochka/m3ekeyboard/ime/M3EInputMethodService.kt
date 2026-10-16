@@ -131,6 +131,7 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                     onStrongTap = { tapFeedback(true) },
                     onSuggestion = { word -> commitSuggestion(word) },
                     onClipboardPaste = { text -> pasteClipboard(text) },
+                    onClipboardDelete = { text -> removeClipboardEntry(text) },
                     onClipboardClear = { clipboardHistory.clear() },
                     onOpenApp = { launchApp() },
                     onLayoutChanged = { layout -> saveLayout(layout) },
@@ -190,6 +191,10 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         val ic = currentInputConnection ?: return
         ic.commitText(text, 1)
         updateSuggestions()
+    }
+
+    private fun removeClipboardEntry(text: String) {
+        clipboardHistory.removeAll(listOf(text))
     }
 
     private fun launchApp() {

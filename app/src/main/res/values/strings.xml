@@ -38,6 +38,7 @@
     <string name="language_title">Default language</string>
     <string name="swipe_hint">Swipe the spacebar left or right to switch language</string>
     <string name="clip_empty">Clipboard is empty</string>
+    <string name="clip_clear_all">Clear all</string>
     <string name="preview_title">Preview</string>
     <string name="try_here">Try the keyboard here</string>
 </resources>
