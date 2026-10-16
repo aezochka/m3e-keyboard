@@ -140,6 +140,8 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
                     onClipboardDelete = { text -> removeClipboardEntry(text) },
                     onClipboardClear = { clipboardHistory.clear() },
                     onEditAction = { id -> performEditAction(id) },
+                    onToggleDigits = { toggleDigits() },
+                    onToggleAccent = { toggleAccent() },
                     onOpenApp = { launchApp() },
                     onLayoutChanged = { layout -> saveLayout(layout) },
                 )
@@ -214,6 +216,16 @@ class M3EInputMethodService : InputMethodService(), LifecycleOwner, ViewModelSto
         currentWord = ""
         updateSuggestions("")
         scheduleSuggestionsUpdate()
+    }
+
+    private fun toggleDigits() {
+        prefsState = prefsState.copy(digitsRow = !prefsState.digitsRow)
+        KeyboardSettings.write(this, prefsState)
+    }
+
+    private fun toggleAccent() {
+        prefsState = prefsState.copy(accentKeys = !prefsState.accentKeys)
+        KeyboardSettings.write(this, prefsState)
     }
 
     private fun removeClipboardEntry(text: String) {

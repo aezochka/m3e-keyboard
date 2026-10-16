@@ -49,6 +49,7 @@
     <string name="act_cut">Вырезать</string>
     <string name="act_paste">Вставить</string>
     <string name="act_select_all">Выделить всё</string>
+    <string name="tile_settings">Настройки</string>
     <string name="preview_title">Предпросмотр</string>
     <string name="try_here">Попробуй клавиатуру здесь</string>
 </resources>

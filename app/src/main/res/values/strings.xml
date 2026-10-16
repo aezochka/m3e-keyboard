@@ -49,6 +49,7 @@
     <string name="act_cut">Cut</string>
     <string name="act_paste">Paste</string>
     <string name="act_select_all">Select all</string>
+    <string name="tile_settings">Settings</string>
     <string name="preview_title">Preview</string>
     <string name="try_here">Try the keyboard here</string>
 </resources>

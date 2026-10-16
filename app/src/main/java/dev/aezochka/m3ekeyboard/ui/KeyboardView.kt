@@ -48,6 +48,9 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.Dialpad
+import androidx.compose.material.icons.outlined.EmojiEmotions
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.SelectAll
@@ -88,8 +91,7 @@ import dev.aezochka.m3ekeyboard.settings.KeyboardPrefs
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-private enum class AreaMode { KEYS, MENU, ACCENT }
-private enum class MenuTab { CLIPBOARD, KAOMOJI }
+private enum class AreaMode { KEYS, MENU, CLIPBOARD, KAOMOJI, ACCENT }
 
 @Composable
 fun KeyboardView(
@@ -108,6 +110,8 @@ fun KeyboardView(
     onClipboardDelete: (String) -> Unit = {},
     onClipboardClear: () -> Unit = {},
     onEditAction: (Int) -> Unit = {},
+    onToggleDigits: () -> Unit = {},
+    onToggleAccent: () -> Unit = {},
     onOpenApp: () -> Unit = {},
     onLayoutChanged: (String) -> Unit,
 ) {
@@ -192,6 +196,16 @@ fun KeyboardView(
             modifier = Modifier.fillMaxWidth(),
         ) {
             ToolbarIcon(
+                icon = Icons.Outlined.ContentPaste,
+                container = if (areaMode == AreaMode.CLIPBOARD) activeBg else Color.Transparent,
+                contentColor = if (areaMode == AreaMode.CLIPBOARD) activeContent else specialContent,
+                onTap = {
+                    onStrongTap()
+                    accentChoices = null
+                    areaMode = if (areaMode == AreaMode.CLIPBOARD) AreaMode.KEYS else AreaMode.CLIPBOARD
+                },
+            )
+            ToolbarIcon(
                 icon = Icons.Outlined.Menu,
                 container = if (areaMode == AreaMode.MENU) activeBg else Color.Transparent,
                 contentColor = if (areaMode == AreaMode.MENU) activeContent else specialContent,
@@ -250,13 +264,21 @@ fun KeyboardView(
         ) { mode ->
             when (mode) {
                 AreaMode.MENU -> MenuPanel(
-                    clipboardEntries = clipboardEntries,
+                    prefs = prefs,
                     onEditAction = onEditAction,
-                    onClipboardPaste = onClipboardPaste,
-                    onClipboardDelete = onClipboardDelete,
-                    onClipboardClear = onClipboardClear,
-                    onKaomoji = { onText(it) },
+                    onOpenClipboard = { areaMode = AreaMode.CLIPBOARD },
+                    onOpenKaomoji = { areaMode = AreaMode.KAOMOJI },
+                    onToggleDigits = onToggleDigits,
+                    onToggleAccent = onToggleAccent,
+                    onOpenApp = onOpenApp,
                 )
+                AreaMode.CLIPBOARD -> ClipboardPanel(
+                    entries = clipboardEntries,
+                    onPaste = onClipboardPaste,
+                    onDelete = onClipboardDelete,
+                    onClearAll = onClipboardClear,
+                )
+                AreaMode.KAOMOJI -> KaomojiFlow(onInsert = { onStrongTap(); onText(it) })
                 AreaMode.ACCENT -> AccentPanel(
                     choices = accentChoices.orEmpty(),
                     onPick = { c ->
@@ -519,99 +541,152 @@ private fun AccentPanel(choices: List<String>, onPick: (String) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuPanel(
-    clipboardEntries: List<String>,
+    prefs: KeyboardPrefs,
     onEditAction: (Int) -> Unit,
-    onClipboardPaste: (String) -> Unit,
-    onClipboardDelete: (String) -> Unit,
-    onClipboardClear: () -> Unit,
-    onKaomoji: (String) -> Unit,
+    onOpenClipboard: () -> Unit,
+    onOpenKaomoji: () -> Unit,
+    onToggleDigits: () -> Unit,
+    onToggleAccent: () -> Unit,
+    onOpenApp: () -> Unit,
 ) {
-    val scheme = MaterialTheme.colorScheme
-    var tab by remember { mutableStateOf(MenuTab.CLIPBOARD) }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            ActionButton(
-                icon = Icons.Outlined.ContentCopy,
-                label = stringResource(R.string.act_copy),
+            FunctionTile(
+                icon = Icons.Outlined.EmojiEmotions,
+                label = stringResource(R.string.menu_kaomoji),
                 modifier = Modifier.weight(1f),
-            ) { onEditAction(android.R.id.copy) }
-            ActionButton(
-                icon = Icons.Outlined.ContentCut,
-                label = stringResource(R.string.act_cut),
+                onTap = onOpenKaomoji,
+            )
+            FunctionTile(
+                icon = Icons.Outlined.ContentPaste,
+                label = stringResource(R.string.menu_clipboard),
                 modifier = Modifier.weight(1f),
-            ) { onEditAction(android.R.id.cut) }
+                onTap = onOpenClipboard,
+            )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            ActionButton(
+            FunctionTile(
+                icon = Icons.Outlined.ContentCopy,
+                label = stringResource(R.string.act_copy),
+                modifier = Modifier.weight(1f),
+                onTap = { onEditAction(android.R.id.copy) },
+            )
+            FunctionTile(
                 icon = Icons.Outlined.ContentPaste,
                 label = stringResource(R.string.act_paste),
                 modifier = Modifier.weight(1f),
-            ) { onEditAction(android.R.id.paste) }
-            ActionButton(
+                onTap = { onEditAction(android.R.id.paste) },
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            FunctionTile(
+                icon = Icons.Outlined.ContentCut,
+                label = stringResource(R.string.act_cut),
+                modifier = Modifier.weight(1f),
+                onTap = { onEditAction(android.R.id.cut) },
+            )
+            FunctionTile(
                 icon = Icons.Outlined.SelectAll,
                 label = stringResource(R.string.act_select_all),
                 modifier = Modifier.weight(1f),
-            ) { onEditAction(android.R.id.selectAll) }
+                onTap = { onEditAction(android.R.id.selectAll) },
+            )
         }
-
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            SegmentedButton(
-                selected = tab == MenuTab.CLIPBOARD,
-                onClick = { tab = MenuTab.CLIPBOARD },
-                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-            ) { Text(stringResource(R.string.menu_clipboard)) }
-            SegmentedButton(
-                selected = tab == MenuTab.KAOMOJI,
-                onClick = { tab = MenuTab.KAOMOJI },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-            ) { Text(stringResource(R.string.menu_kaomoji)) }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            FunctionTile(
+                icon = Icons.Outlined.Dialpad,
+                label = stringResource(R.string.digits_row),
+                active = prefs.digitsRow,
+                modifier = Modifier.weight(1f),
+                onTap = onToggleDigits,
+            )
+            FunctionTile(
+                icon = Icons.Outlined.Palette,
+                label = stringResource(R.string.accent_keys),
+                active = prefs.accentKeys,
+                modifier = Modifier.weight(1f),
+                onTap = onToggleAccent,
+            )
         }
+        FunctionTile(
+            icon = Icons.Outlined.Settings,
+            label = stringResource(R.string.tile_settings),
+            modifier = Modifier.fillMaxWidth(),
+            onTap = onOpenApp,
+        )
+    }
+}
 
-        Box(modifier = Modifier.weight(1f)) {
-            when (tab) {
-                MenuTab.CLIPBOARD -> Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (clipboardEntries.isEmpty()) {
-                        Text(
-                            stringResource(R.string.clip_empty),
-                            color = scheme.onSurfaceVariant,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(10.dp),
-                        )
-                    } else {
-                        clipboardEntries.forEach { entry -> ClipRow(entry, onClipboardPaste, onClipboardDelete) }
-                        Text(
-                            text = stringResource(R.string.clip_clear_all),
-                            color = scheme.primary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onClipboardClear() }
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                        )
-                    }
+@Composable
+private fun ClipboardPanel(
+    entries: List<String>,
+    onPaste: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.menu_clipboard),
+                style = MaterialTheme.typography.titleMedium,
+                color = scheme.onSurface,
+            )
+            if (entries.isNotEmpty()) {
+                ToolbarIcon(
+                    icon = Icons.Outlined.Delete,
+                    container = Color.Transparent,
+                    contentColor = scheme.onSurfaceVariant,
+                    onTap = onClearAll,
+                )
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (entries.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.clip_empty),
+                    color = scheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(10.dp),
+                )
+            } else {
+                entries.forEach { entry ->
+                    ClipRow(entry = entry, onPaste = onPaste, onDelete = onDelete)
                 }
-                MenuTab.KAOMOJI -> KaomojiFlow(onKaomoji)
             }
         }
     }
@@ -625,9 +700,9 @@ private fun KaomojiFlow(onInsert: (String) -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 4.dp),
+            .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Kaomoji.ALL.forEach { k ->
             Box(
@@ -635,12 +710,12 @@ private fun KaomojiFlow(onInsert: (String) -> Unit) {
                     .clip(MaterialShapes.Pill.toShape())
                     .background(scheme.secondaryContainer)
                     .clickable { onInsert(k) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
                 Text(
                     text = k,
                     color = scheme.onSecondaryContainer,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                 )
             }
         }
@@ -657,11 +732,11 @@ private fun ClipRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .heightIn(min = 52.dp)
+            .clip(RoundedCornerShape(18.dp))
             .background(scheme.surfaceContainerHighest)
             .clickable { onPaste(entry) }
-            .padding(start = 14.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -669,16 +744,16 @@ private fun ClipRow(
                 .let { if (it.length > 80) it.take(80) + "…" else it },
             modifier = Modifier
                 .weight(1f)
-                .padding(vertical = 10.dp),
+                .padding(vertical = 12.dp),
             color = scheme.onSurface,
-            fontSize = 14.sp,
+            fontSize = 15.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
                 .clickable { onDelete(entry) },
             contentAlignment = Alignment.Center,
         ) {
@@ -686,39 +761,40 @@ private fun ClipRow(
                 imageVector = Icons.Outlined.Close,
                 contentDescription = null,
                 tint = scheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
     }
 }
 
 @Composable
-private fun ActionButton(
+private fun FunctionTile(
     icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
+    active: Boolean = false,
     onTap: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     Row(
         modifier = modifier
-            .height(46.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(scheme.surfaceContainerHighest)
+            .height(54.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (active) scheme.secondaryContainer else scheme.surfaceContainerHighest)
             .clickable { onTap() }
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = scheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
+            tint = if (active) scheme.onSecondaryContainer else scheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
         )
         Text(
             text = label,
-            color = scheme.onSurface,
+            color = if (active) scheme.onSecondaryContainer else scheme.onSurface,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
